@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.12.35527.113 d17.12
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VinWallet.Repository", "VinWallet.Repository\VinWallet.Repository.csproj", "{7A6260D7-A822-43DC-A2F6-B743083E01E1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VinWallet.Domain", "VinWallet.Domain\VinWallet.Domain.csproj", "{4D9D5F64-5B43-422E-8C2A-CFA523AE691A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VinWallet.API", "VinWallet.API\VinWallet.API.csproj", "{258AD6DA-EEAB-4B19-A90C-38A5834155AB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7A6260D7-A822-43DC-A2F6-B743083E01E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A6260D7-A822-43DC-A2F6-B743083E01E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A6260D7-A822-43DC-A2F6-B743083E01E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A6260D7-A822-43DC-A2F6-B743083E01E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D9D5F64-5B43-422E-8C2A-CFA523AE691A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D9D5F64-5B43-422E-8C2A-CFA523AE691A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D9D5F64-5B43-422E-8C2A-CFA523AE691A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D9D5F64-5B43-422E-8C2A-CFA523AE691A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{258AD6DA-EEAB-4B19-A90C-38A5834155AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{258AD6DA-EEAB-4B19-A90C-38A5834155AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{258AD6DA-EEAB-4B19-A90C-38A5834155AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{258AD6DA-EEAB-4B19-A90C-38A5834155AB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,6 @@
+@VinWallet.API_HostAddress = http://localhost:5048
+
+GET {{VinWallet.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
