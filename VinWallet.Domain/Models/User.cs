@@ -17,9 +17,15 @@ public partial class User
 
     public DateTime? UpdatedAt { get; set; }
 
+    public string? Username { get; set; }
+
+    public string? Password { get; set; }
+
     public Guid? RoomId { get; set; }
 
-    public virtual ICollection<Account> Accounts { get; set; } = new List<Account>();
+    public Guid? RoleId { get; set; }
+
+    public virtual Role? Role { get; set; }
 
     public virtual ICollection<UserWallet> UserWallets { get; set; } = new List<UserWallet>();
 }

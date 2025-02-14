@@ -20,22 +20,21 @@ namespace VinWallet.API.Service.Implements
 
         public async Task<LoginResponse> Login(LoginRequest loginRequest)
         {
-            Expression<Func<Account, bool>> searchFilter = p =>
+            Expression<Func<User, bool>> searchFilter = p =>
                p.Username.Equals(loginRequest.Username) &&
                p.Password.Equals(PasswordUtil.HashPassword(loginRequest.Password));
 
-            Account account = await _unitOfWork.GetRepository<Account>().SingleOrDefaultAsync(predicate: searchFilter,include: x => x.Include(x => x.User).Include(x => x.Role));
-            if (account == null) throw new BadHttpRequestException(MessageConstant.LoginMessage.InvalidUsernameOrPassword);
+            User user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: searchFilter,include: x=> x.Include(x => x.Role));
+            if (user == null) throw new BadHttpRequestException(MessageConstant.LoginMessage.InvalidUsernameOrPassword);
             LoginResponse loginResponse = new LoginResponse
             {
-                AccountId = account.Id,
-                FullName = account.User.FullName,
-                ImageUrl = account.ImageUrl,
-                Role = account.Role.Name,
-                Status = account.Status,
+                UserId = user.Id,
+                FullName = user.FullName,
+                Role = user.Role.Name,
+                Status = user.Status,
             };
-            Tuple<string, Guid> guidClaim = new Tuple<string, Guid>("UserId", account.User.Id);
-            var token = JwtUtil.GenerateJwtToken(account, guidClaim);
+            Tuple<string, Guid> guidClaim = new Tuple<string, Guid>("UserId", user.Id);
+            var token = JwtUtil.GenerateJwtToken(user, guidClaim);
             loginResponse.AccessToken = token.AccessToken;
             loginResponse.RefreshToken = token.RefreshToken;
             return loginResponse;
