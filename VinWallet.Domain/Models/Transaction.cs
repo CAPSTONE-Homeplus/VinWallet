@@ -29,6 +29,10 @@ public partial class Transaction
 
     public string? Code { get; set; }
 
+    public Guid? CategoryId { get; set; }
+
+    public virtual Category? Category { get; set; }
+
     public virtual PaymentMethod? PaymentMethod { get; set; }
 
     public virtual Wallet? Wallet { get; set; }

@@ -10,10 +10,9 @@ namespace VinWallet.Repository.Payload.Response
     {
         public string AccessToken { get; set; }
         public string RefreshToken { get; set; }
-        public Guid AccountId { get; set; }
+        public Guid UserId { get; set; }
         public string? FullName { get; set; }
         public String Status { get; set; }
-        public string? ImageUrl { get; set; }   
         public string Role { get; set; }
     }
 }

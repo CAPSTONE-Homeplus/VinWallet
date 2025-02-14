@@ -15,7 +15,7 @@ namespace VinWallet.Repository.Utils
     {
         private JwtUtil() { }
 
-        public static JwtResponse GenerateJwtToken(Account account, Tuple<string, Guid> guidClaim)
+        public static JwtResponse GenerateJwtToken(User user, Tuple<string, Guid> guidClaim)
         {
             var accessTokenSecret = "SuperStrongSecretKeyForJwtToken123!";
             var refreshTokenSecret = "AnotherSuperSecretKeyForRefreshToken!";
@@ -31,8 +31,9 @@ namespace VinWallet.Repository.Utils
             List<Claim> accessClaims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(JwtRegisteredClaimNames.Sub, account.Id.ToString()),
-            new Claim("Username", account.Username),
+            new Claim(JwtRegisteredClaimNames.Sub, user.Username),
+            new Claim(ClaimTypes.Role, user.Role.Name),
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
         };
 
             if (guidClaim != null)
@@ -57,7 +58,7 @@ namespace VinWallet.Repository.Utils
             List<Claim> refreshClaims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(JwtRegisteredClaimNames.Sub, account.UserId.ToString()),
+            new Claim(JwtRegisteredClaimNames.Sub, account.Id.ToString()),
             new Claim("username", account.Username)
         };
 

@@ -15,8 +15,6 @@ public partial class VinWalletContext : DbContext
     {
     }
 
-    public virtual DbSet<Account> Accounts { get; set; }
-
     public virtual DbSet<Category> Categories { get; set; }
 
     public virtual DbSet<PaymentMethod> PaymentMethods { get; set; }
@@ -29,8 +27,6 @@ public partial class VinWalletContext : DbContext
 
     public virtual DbSet<Transaction> Transactions { get; set; }
 
-    public virtual DbSet<TransactionCategory> TransactionCategories { get; set; }
-
     public virtual DbSet<User> Users { get; set; }
 
     public virtual DbSet<UserWallet> UserWallets { get; set; }
@@ -41,33 +37,13 @@ public partial class VinWalletContext : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=localhost;Database=VinWallet;Uid=sa;Pwd=anhlt2403;TrustServerCertificate=True;");
+        => optionsBuilder.UseSqlServer("server =54.251.108.33; database = VinWallet;uid=admin_passio;pwd=vA+Q!N3pZdJyXuerBx9bCF;TrustServerCertificate=true");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Account>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__Account__3214EC07EE49BF72");
-
-            entity.ToTable("Account");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
-            entity.Property(e => e.Status).HasMaxLength(20);
-            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
-
-            entity.HasOne(d => d.Role).WithMany(p => p.Accounts)
-                .HasForeignKey(d => d.RoleId)
-                .HasConstraintName("FK_Account_Role");
-
-            entity.HasOne(d => d.User).WithMany(p => p.Accounts)
-                .HasForeignKey(d => d.UserId)
-                .HasConstraintName("FK_Account_User");
-        });
-
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Category__3214EC07789D056C");
+            entity.HasKey(e => e.Id).HasName("PK__Category__3214EC070CE454B5");
 
             entity.ToTable("Category");
 
@@ -79,7 +55,7 @@ public partial class VinWalletContext : DbContext
 
         modelBuilder.Entity<PaymentMethod>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__PaymentM__3214EC07974D40E4");
+            entity.HasKey(e => e.Id).HasName("PK__PaymentM__3214EC072F2E5DED");
 
             entity.ToTable("PaymentMethod");
 
@@ -91,7 +67,7 @@ public partial class VinWalletContext : DbContext
 
         modelBuilder.Entity<Permission>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Permissi__3214EC07A0BE6CDD");
+            entity.HasKey(e => e.Id).HasName("PK__Permissi__3214EC0748E534AE");
 
             entity.ToTable("Permission");
 
@@ -103,7 +79,7 @@ public partial class VinWalletContext : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Role__3214EC07504335C7");
+            entity.HasKey(e => e.Id).HasName("PK__Role__3214EC07FC135C1B");
 
             entity.ToTable("Role");
 
@@ -115,7 +91,7 @@ public partial class VinWalletContext : DbContext
 
         modelBuilder.Entity<RolePermission>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__RolePerm__3214EC07FD454FAC");
+            entity.HasKey(e => e.Id).HasName("PK__RolePerm__3214EC074FEF6EB8");
 
             entity.ToTable("RolePermission");
 
@@ -135,7 +111,7 @@ public partial class VinWalletContext : DbContext
 
         modelBuilder.Entity<Transaction>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Transact__3214EC07CEDD895E");
+            entity.HasKey(e => e.Id).HasName("PK__Transact__3214EC07A3BEB974");
 
             entity.ToTable("Transaction");
 
@@ -144,6 +120,10 @@ public partial class VinWalletContext : DbContext
             entity.Property(e => e.Status).HasMaxLength(20);
             entity.Property(e => e.TransactionDate).HasColumnType("datetime");
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+
+            entity.HasOne(d => d.Category).WithMany(p => p.Transactions)
+                .HasForeignKey(d => d.CategoryId)
+                .HasConstraintName("FK_Transaction_Category");
 
             entity.HasOne(d => d.PaymentMethod).WithMany(p => p.Transactions)
                 .HasForeignKey(d => d.PaymentMethodId)
@@ -154,25 +134,9 @@ public partial class VinWalletContext : DbContext
                 .HasConstraintName("FK_Transaction_Wallet");
         });
 
-        modelBuilder.Entity<TransactionCategory>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__Transact__3214EC079A135FC4");
-
-            entity.ToTable("TransactionCategory");
-
-            entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
-            entity.Property(e => e.Status).HasMaxLength(20);
-            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
-
-            entity.HasOne(d => d.Category).WithMany(p => p.TransactionCategories)
-                .HasForeignKey(d => d.CategoryId)
-                .HasConstraintName("FK_TransactionCategory_Category");
-        });
-
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__User__3214EC070744CB5F");
+            entity.HasKey(e => e.Id).HasName("PK__tmp_ms_x__3214EC07D26CCCC6");
 
             entity.ToTable("User");
 
@@ -180,11 +144,15 @@ public partial class VinWalletContext : DbContext
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
             entity.Property(e => e.Status).HasMaxLength(20);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+
+            entity.HasOne(d => d.Role).WithMany(p => p.Users)
+                .HasForeignKey(d => d.RoleId)
+                .HasConstraintName("FK_User_Role");
         });
 
         modelBuilder.Entity<UserWallet>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__UserWall__3214EC07BDBD9317");
+            entity.HasKey(e => e.Id).HasName("PK__UserWall__3214EC07966190BC");
 
             entity.ToTable("UserWallet");
 
@@ -204,7 +172,7 @@ public partial class VinWalletContext : DbContext
 
         modelBuilder.Entity<Wallet>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Wallets__3214EC079F00488E");
+            entity.HasKey(e => e.Id).HasName("PK__Wallets__3214EC07C132C09C");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
@@ -215,7 +183,7 @@ public partial class VinWalletContext : DbContext
 
         modelBuilder.Entity<WalletHistory>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__WalletHi__3214EC0795D9C24F");
+            entity.HasKey(e => e.Id).HasName("PK__WalletHi__3214EC078D8CBCEC");
 
             entity.ToTable("WalletHistory");
 
