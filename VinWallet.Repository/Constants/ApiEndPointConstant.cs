@@ -21,5 +21,11 @@ namespace VinWallet.Repository.Constants
             public const string AuthenticationEndpoint = ApiEndpoint + "/auth";
             public const string Login = AuthenticationEndpoint + "/login";
         }
+
+        public static class User
+        {
+            public const string UsersEndpoint = ApiEndpoint + "/users";
+            public const string UserEndpoint = UsersEndpoint + "/{id}";
+        }
     }
 }
