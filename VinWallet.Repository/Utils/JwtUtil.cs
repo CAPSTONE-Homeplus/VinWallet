@@ -58,8 +58,9 @@ namespace VinWallet.Repository.Utils
             List<Claim> refreshClaims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(JwtRegisteredClaimNames.Sub, account.Id.ToString()),
-            new Claim("username", account.Username)
+            new Claim(JwtRegisteredClaimNames.Sub, user.Username),
+            new Claim(ClaimTypes.Role, user.Role.Name),
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
         };
 
             var refreshToken = new JwtSecurityToken(

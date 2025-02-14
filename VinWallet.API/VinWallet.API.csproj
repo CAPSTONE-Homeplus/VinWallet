@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.29.3" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.67.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.69.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.12" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
@@ -14,5 +20,8 @@
   <ItemGroup>
     <ProjectReference Include="..\VinWallet.Repository\VinWallet.Repository.csproj" />
   </ItemGroup>
-
+	
+	<ItemGroup>
+		<Protobuf Include="Protos/room.proto" GrpcServices="Client" />
+	</ItemGroup>
 </Project>
