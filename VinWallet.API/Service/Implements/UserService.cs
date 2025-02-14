@@ -1,0 +1,58 @@
+﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
+using RoomProto;
+using VinWallet.API.Service.Interfaces;
+using VinWallet.Domain.Models;
+using VinWallet.Repository.Constants;
+using VinWallet.Repository.Enums;
+using VinWallet.Repository.Generic.Interfaces;
+using VinWallet.Repository.Payload.Request.UserRequest;
+using VinWallet.Repository.Payload.Response.UserResponse;
+using VinWallet.Repository.Utils;
+
+namespace VinWallet.API.Service.Implements
+{
+    public class UserService : BaseService<UserService>, IUserService
+    {
+        private readonly RoomGrpcService.RoomGrpcServiceClient _roomGrpcClient;
+
+        public UserService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<UserService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, RoomGrpcService.RoomGrpcServiceClient roomGrpcClient) : base(unitOfWork, logger, mapper, httpContextAccessor)
+        {
+            _roomGrpcClient = roomGrpcClient;
+        }
+
+        public async Task<UserResponse> CreateUser(CreateUserRequest createUserRequest)
+        {
+            var existUser = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.Username.Equals(createUserRequest.Username));
+            if (existUser != null) throw new BadHttpRequestException(MessageConstant.UserMessage.UsernameAlreadyExists);
+
+            var room = await _roomGrpcClient.GetRoomGrpcAsync(new RoomGrpcRequest { RoomCode = createUserRequest.RoomCode });
+            if (room.Id.Equals("")) throw new BadHttpRequestException(MessageConstant.RoomMessage.RoomNotFound);
+
+            var newUser = _mapper.Map<User>(createUserRequest);
+            newUser.Id = Guid.NewGuid();
+            newUser.Password = PasswordUtil.HashPassword(createUserRequest.Password);
+            newUser.Status = UserEnum.Status.Active.ToString();
+            newUser.RoomId = Guid.Parse(room.Id);
+
+            var hasRoomLeader = await _unitOfWork.GetRepository<User>().AnyAsync(predicate: x => x.RoomId.Equals(room.Id));
+            if (hasRoomLeader)
+            {
+                var role =  await _unitOfWork.GetRepository<Role>().SingleOrDefaultAsync(predicate: x => x.Name.Equals(UserEnum.Role.Member.ToString()));
+                newUser.RoleId = role.Id;
+            }
+            else
+            {
+                var role = await _unitOfWork.GetRepository<Role>().SingleOrDefaultAsync(predicate: x => x.Name.Equals(UserEnum.Role.Leader.ToString()));
+                newUser.RoleId = role.Id;
+            }
+
+            newUser.CreatedAt = DateTime.UtcNow.AddHours(7);
+            newUser.UpdatedAt = DateTime.UtcNow.AddHours(7);
+
+            await _unitOfWork.GetRepository<User>().InsertAsync(newUser);
+            if (await _unitOfWork.CommitAsync() <= 0) throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
+            return _mapper.Map<UserResponse>(newUser);
+        }
+    }
+}
