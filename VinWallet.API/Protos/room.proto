@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option csharp_namespace = "RoomProto";
+
+service RoomGrpcService {
+  rpc GetRoomGrpc (RoomGrpcRequest) returns (RoomGrpcResponse);
+}
+
+message RoomGrpcRequest {
+  string roomCode = 1;
+}
+
+message RoomGrpcResponse {
+  string id = 1;
+  string name = 2;
+  string status = 3;
+}
