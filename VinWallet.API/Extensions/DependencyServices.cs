@@ -40,8 +40,8 @@ public static class DependencyServices
 
         services.AddGrpcClient<RoomGrpcService.RoomGrpcServiceClient>(x =>
         {
-            //x.Address = new Uri("https://localhost:7106");
-            x.Address = new Uri("https://homeclean.onrender.com");
+            x.Address = new Uri("https://localhost:7106");
+            //x.Address = new Uri("https://homeclean.onrender.com");
         });
         return services;
     }
