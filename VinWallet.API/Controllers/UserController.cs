@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using VinWallet.API.Service.Interfaces;
+using VinWallet.API.Validators;
 using VinWallet.Domain.Paginate;
 using VinWallet.Repository.Constants;
+using VinWallet.Repository.Enums;
 using VinWallet.Repository.Payload.Request.UserRequest;
 using VinWallet.Repository.Payload.Response.UserResponse;
 using VinWallet.Repository.Payload.Response.WalletResponse;
@@ -40,6 +42,7 @@ namespace VinWallet.API.Controllers
             return Ok(response);
         }
 
+        [CustomAuthorize(UserEnum.Role.Member, UserEnum.Role.Member)]
         [HttpGet(ApiEndPointConstant.User.WalletsOfUserEndpoint)]
         [ProducesResponseType(typeof(IPaginate<WalletResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetWalletsOfUser([FromRoute] Guid id, [FromQuery] int page = 1, [FromQuery] int size = 10)

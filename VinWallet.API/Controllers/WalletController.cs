@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using VinWallet.API.Service.Interfaces;
+using VinWallet.API.Validators;
 using VinWallet.Repository.Constants;
+using VinWallet.Repository.Enums;
 using VinWallet.Repository.Payload.Response.WalletResponse;
 
 namespace VinWallet.API.Controllers
@@ -14,6 +16,7 @@ namespace VinWallet.API.Controllers
             _walletService = walletService;
         }
 
+        [CustomAuthorize(UserEnum.Role.Member, UserEnum.Role.Member)]
         [HttpGet(ApiEndPointConstant.Wallet.WalletEndpoint)]
         [ProducesResponseType(typeof(WalletResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetWalletById([FromRoute] Guid id)
