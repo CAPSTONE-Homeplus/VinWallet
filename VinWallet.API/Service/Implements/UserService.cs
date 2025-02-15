@@ -7,6 +7,7 @@ using VinWallet.Repository.Constants;
 using VinWallet.Repository.Enums;
 using VinWallet.Repository.Generic.Interfaces;
 using VinWallet.Repository.Payload.Request.UserRequest;
+using VinWallet.Repository.Payload.Request.WalletRequest;
 using VinWallet.Repository.Payload.Response.UserResponse;
 using VinWallet.Repository.Utils;
 
@@ -15,10 +16,11 @@ namespace VinWallet.API.Service.Implements
     public class UserService : BaseService<UserService>, IUserService
     {
         private readonly RoomGrpcService.RoomGrpcServiceClient _roomGrpcClient;
-
-        public UserService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<UserService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, RoomGrpcService.RoomGrpcServiceClient roomGrpcClient) : base(unitOfWork, logger, mapper, httpContextAccessor)
+        private readonly IWalletService _walletService;
+        public UserService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<UserService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, RoomGrpcService.RoomGrpcServiceClient roomGrpcClient, IWalletService walletService) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
             _roomGrpcClient = roomGrpcClient;
+            _walletService = walletService;
         }
 
         public async Task<UserResponse> CreateUser(CreateUserRequest createUserRequest)
@@ -36,14 +38,16 @@ namespace VinWallet.API.Service.Implements
             newUser.RoomId = Guid.Parse(room.Id);
 
             var hasRoomLeader = await _unitOfWork.GetRepository<User>().AnyAsync(predicate: x => x.RoomId.Equals(room.Id));
+
+            Role role;
             if (hasRoomLeader)
             {
-                var role =  await _unitOfWork.GetRepository<Role>().SingleOrDefaultAsync(predicate: x => x.Name.Equals(UserEnum.Role.Member.ToString()));
+                role =  await _unitOfWork.GetRepository<Role>().SingleOrDefaultAsync(predicate: x => x.Name.Equals(UserEnum.Role.Member.ToString()));
                 newUser.RoleId = role.Id;
             }
             else
             {
-                var role = await _unitOfWork.GetRepository<Role>().SingleOrDefaultAsync(predicate: x => x.Name.Equals(UserEnum.Role.Leader.ToString()));
+                role = await _unitOfWork.GetRepository<Role>().SingleOrDefaultAsync(predicate: x => x.Name.Equals(UserEnum.Role.Leader.ToString()));
                 newUser.RoleId = role.Id;
             }
 
@@ -52,7 +56,62 @@ namespace VinWallet.API.Service.Implements
 
             await _unitOfWork.GetRepository<User>().InsertAsync(newUser);
             if (await _unitOfWork.CommitAsync() <= 0) throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
-            return _mapper.Map<UserResponse>(newUser);
+
+            _ = Task.Run(async () =>
+            {
+
+                var walletRequest = new CreateWalletRequest
+                {
+                    Name = WalletEnum.WalletType.Personal.ToString() + newUser.Username,
+                    Type = WalletEnum.WalletType.Personal.ToString(),
+                    OwnerId = newUser.Id
+                };
+                var wallet = await _walletService.CreateWallet(walletRequest);
+                await _walletService.ConnectWalletToUser(newUser.Id, wallet.Id);
+            });
+
+            if (role.Name.Equals(UserEnum.Role.Leader.ToString()))
+            {
+
+
+                _ = Task.Run(async () =>
+                {
+                    var walletRequestLeader = new CreateWalletRequest
+                    {
+                        Name = WalletEnum.WalletType.Shared.ToString() + createUserRequest.RoomCode,
+                        Type = WalletEnum.WalletType.Shared.ToString(),
+                        OwnerId = newUser.Id
+                    };
+                    var wallet = await _walletService.CreateWallet(walletRequestLeader);
+                    await _walletService.ConnectWalletToUser(newUser.Id, wallet.Id);
+                });
+            }
+            else
+            {
+                _ = Task.Run(async () =>
+                {
+                    var leader = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.RoomId.Equals(room.Id) && x.Role.Name.Equals(UserEnum.Role.Leader),
+                       include: x => x.Include(x => x.Role));
+                    var sharedWallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate: x => x.OwnerId.Equals(leader.Id) && 
+                    x.Type.Equals(WalletEnum.WalletType.Shared.ToString()));
+                    await _walletService.ConnectWalletToUser(newUser.Id, sharedWallet.Id);
+                });
+
+            }
+
+            var response =  _mapper.Map<UserResponse>(newUser);
+            response.Role = role.Name;
+            return response;
+        }
+
+        public async Task<UserResponse> GetUserById(Guid id)
+        {
+            if(id == Guid.Empty) throw new BadHttpRequestException(MessageConstant.UserMessage.EmptyUserId);
+            var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(id),
+                include: x => x.Include(x => x.Role));
+            var response = _mapper.Map<UserResponse>(user);
+            response.Role = user.Role.Name;
+            return response;
         }
     }
 }

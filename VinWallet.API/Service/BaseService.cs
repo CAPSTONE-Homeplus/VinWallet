@@ -1,9 +1,12 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.JsonWebTokens;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using VinWallet.Domain.Models;
 using VinWallet.Repository.Generic.Interfaces;
+using JwtRegisteredClaimNames = System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames;
 
 
 namespace VinWallet.API.Service
@@ -27,8 +30,7 @@ namespace VinWallet.API.Service
 
         protected string GetUsernameFromJwt()
         {
-            string username = _httpContextAccessor?.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
-            return username;
+            return _httpContextAccessor?.HttpContext?.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
         }
 
         protected string GetRoleFromJwt()
@@ -37,6 +39,10 @@ namespace VinWallet.API.Service
             return role;
         }
 
-
+        protected string GetUserIdFromJwt()
+        {
+            string userId = _httpContextAccessor?.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return userId;
+        }
     }
 }
