@@ -9,7 +9,7 @@ public partial class Wallet
 
     public string? Name { get; set; }
 
-    public string? Balance { get; set; }
+    public decimal? Balance { get; set; }
 
     public string? Currency { get; set; }
 

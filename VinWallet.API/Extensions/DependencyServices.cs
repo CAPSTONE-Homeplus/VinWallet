@@ -35,6 +35,7 @@ public static class DependencyServices
     {
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IWalletService, WalletService>();
 
 
         services.AddGrpcClient<RoomGrpcService.RoomGrpcServiceClient>(x =>

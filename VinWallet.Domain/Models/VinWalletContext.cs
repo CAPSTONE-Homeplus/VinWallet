@@ -172,9 +172,10 @@ public partial class VinWalletContext : DbContext
 
         modelBuilder.Entity<Wallet>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Wallets__3214EC07C132C09C");
+            entity.HasKey(e => e.Id).HasName("PK__tmp_ms_x__3214EC079FB6B44B");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Balance).HasColumnType("decimal(18, 0)");
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
             entity.Property(e => e.Status).HasMaxLength(20);
             entity.Property(e => e.Type).HasMaxLength(20);
