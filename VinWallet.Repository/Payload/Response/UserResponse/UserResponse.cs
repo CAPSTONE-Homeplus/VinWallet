@@ -15,5 +15,15 @@ namespace VinWallet.Repository.Payload.Response.UserResponse
         public string? Status { get; set; }
 
         public Guid? RoomId { get; set; }
+
+        public string? ExtraField { get; set; }
+
+        public DateTime? CreatedAt { get; set; }
+
+        public DateTime? UpdatedAt { get; set; }
+
+        public string? Username { get; set; }
+
+        public string? Role { get; set; }
     }
 }

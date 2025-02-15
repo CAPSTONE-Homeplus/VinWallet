@@ -16,11 +16,21 @@ namespace VinWallet.Repository.Constants
 
         public static class UserMessage
         {
+            public const string EmptyUserId = "User id bị trống";
             public const string UserNotFound = "Không tìm thấy người dùng";
             public const string UsernameAlreadyExists = "Username đã tồn tại";
             public const string UserInactivated = "Người dùng đã bị vô hiệu hoá";
             public const string UserActivated = "Người dùng đã được kích hoạt";
             public const string CreateUserFailed = "Tạo người dùng thất bại";
+            public const string NotAllowAction = "Bạn không được truy cập phần thông tin này";
+        }
+
+        public static class WalletMessage
+        {
+            public const string EmptyWalletId = "Wallet id bị trống";
+
+            public const string WalletNotFound = "Không tìm thấy ví";
+            public const string CreateWalletFailed = "Tạo ví thất bại";
         }
 
         public static class RoomMessage
