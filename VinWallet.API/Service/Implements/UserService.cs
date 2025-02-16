@@ -32,6 +32,7 @@ namespace VinWallet.API.Service.Implements
 
             var apiResponse = await CallApiUtils.CallApiGetEndpoint(HomeCleanApiEndPointConstant.Room.RoomByCodeEndpoint, createUserRequest.RoomCode);
             var room = await CallApiUtils.GenerateObjectFromResponse<RoomResponse>(apiResponse);
+            if (room == null) throw new BadHttpRequestException(MessageConstant.RoomMessage.RoomNotFound);
             var newUser = _mapper.Map<User>(createUserRequest);
             newUser.Id = Guid.NewGuid();
             newUser.Password = PasswordUtil.HashPassword(createUserRequest.Password);
