@@ -5,6 +5,8 @@ using System.Linq;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
+using VinWallet.Repository.Constants;
 
 namespace VinWallet.Repository.Utils
 {
@@ -27,6 +29,15 @@ namespace VinWallet.Repository.Utils
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             var response = await httpClient.PostAsync(url, content);
+            return response;
+        }
+
+
+        public static async Task<HttpResponseMessage> CallApiGetEndpoint(string url, string roomCode)
+        {
+            using var httpClient = new HttpClient();
+            string requestUrl = HomeCleanApiEndPointConstant.Room.RoomByCodeEndpoint.Replace("{room-code}", roomCode);
+            var response = await httpClient.GetAsync(requestUrl);
             return response;
         }
 
