@@ -8,6 +8,7 @@ using VinWallet.Repository.Enums;
 using VinWallet.Repository.Generic.Interfaces;
 using VinWallet.Repository.Payload.Request.UserRequest;
 using VinWallet.Repository.Payload.Request.WalletRequest;
+using VinWallet.Repository.Payload.Response.RoomResponse;
 using VinWallet.Repository.Payload.Response.UserResponse;
 using VinWallet.Repository.Utils;
 
@@ -28,18 +29,16 @@ namespace VinWallet.API.Service.Implements
             var existUser = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.Username.Equals(createUserRequest.Username));
             if (existUser != null) throw new BadHttpRequestException(MessageConstant.UserMessage.UsernameAlreadyExists);
 
-            var room = await _roomGrpcClient.GetRoomGrpcAsync(new RoomGrpcRequest { RoomCode = createUserRequest.RoomCode });
 
-
-            if (room.Id.Equals("")) throw new BadHttpRequestException(MessageConstant.RoomMessage.RoomNotFound);
-
+            var apiResponse = await CallApiUtils.CallApiGetEndpoint(HomeCleanApiEndPointConstant.Room.RoomByCodeEndpoint, createUserRequest.RoomCode);
+            var room = await CallApiUtils.GenerateObjectFromResponse<RoomResponse>(apiResponse);
             var newUser = _mapper.Map<User>(createUserRequest);
             newUser.Id = Guid.NewGuid();
             newUser.Password = PasswordUtil.HashPassword(createUserRequest.Password);
             newUser.Status = UserEnum.Status.Active.ToString();
-            newUser.RoomId = Guid.Parse(room.Id);
+            newUser.RoomId = room.Id;
 
-            var hasRoomLeader = await _unitOfWork.GetRepository<User>().AnyAsync(predicate: x => x.RoomId.ToString().Equals(room.Id));
+            var hasRoomLeader = await _unitOfWork.GetRepository<User>().AnyAsync(predicate: x => x.RoomId.Equals(room.Id));
 
             Role role;
             if (hasRoomLeader)
@@ -86,7 +85,7 @@ namespace VinWallet.API.Service.Implements
             else
             {
 
-                var leader = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.RoomId.ToString().Equals(room.Id) && x.Role.Name.Equals(UserEnum.Role.Leader.ToString()),
+                var leader = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.RoomId.Equals(room.Id) && x.Role.Name.Equals(UserEnum.Role.Leader.ToString()),
                    include: x => x.Include(x => x.Role));
                 var sharedWallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate: x => x.OwnerId.Equals(leader.Id) &&
                 x.Type.Equals(WalletEnum.WalletType.Shared.ToString()));
