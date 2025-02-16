@@ -16,7 +16,7 @@ namespace VinWallet.API.Controllers
             _walletService = walletService;
         }
 
-        [CustomAuthorize(UserEnum.Role.Member, UserEnum.Role.Member)]
+        [CustomAuthorize(UserEnum.Role.Leader, UserEnum.Role.Member)]
         [HttpGet(ApiEndPointConstant.Wallet.WalletEndpoint)]
         [ProducesResponseType(typeof(WalletResponse), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetWalletById([FromRoute] Guid id)

@@ -30,7 +30,7 @@ namespace VinWallet.API.Service
 
         protected string GetUsernameFromJwt()
         {
-            return _httpContextAccessor?.HttpContext?.User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+            return _httpContextAccessor?.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
         }
 
         protected string GetRoleFromJwt()

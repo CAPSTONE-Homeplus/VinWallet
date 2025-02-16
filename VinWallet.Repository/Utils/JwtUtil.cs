@@ -8,6 +8,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using VinWallet.Domain.Models;
+using VinWallet.Repository.Payload.Request;
 
 namespace VinWallet.Repository.Utils
 {
@@ -33,7 +34,6 @@ namespace VinWallet.Repository.Utils
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(JwtRegisteredClaimNames.Sub, user.Username),
             new Claim(ClaimTypes.Role, user.Role.Name),
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
         };
 
             if (guidClaim != null)
@@ -60,9 +60,12 @@ namespace VinWallet.Repository.Utils
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(JwtRegisteredClaimNames.Sub, user.Username),
             new Claim(ClaimTypes.Role, user.Role.Name),
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
         };
 
+            if (guidClaim != null)
+            {
+                refreshClaims.Add(new Claim(guidClaim.Item1, guidClaim.Item2.ToString()));
+            }
             var refreshToken = new JwtSecurityToken(
                 issuer: issuer,
                 audience: null,
@@ -90,6 +93,62 @@ namespace VinWallet.Repository.Utils
             public string RefreshToken { get; set; }
             public DateTime RefreshTokenExpires { get; set; }
         }
+
+
+        public static JwtResponse RefreshToken(RefreshTokenRequest refreshTokenRequest)
+        {
+            var refreshTokenSecret = "AnotherSuperSecretKeyForRefreshToken!";
+            var accessTokenSecret = "SuperStrongSecretKeyForJwtToken123!";
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+
+
+            try
+            {
+                var tokenValidationParams = new TokenValidationParameters
+                {
+                    ValidIssuer = "Issuer",
+                    ValidateIssuer = true,
+                    ValidateAudience = false,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey =
+                         new SymmetricSecurityKey(Encoding.UTF8.GetBytes(refreshTokenSecret)),
+                    NameClaimType = JwtRegisteredClaimNames.Sub,
+                    RoleClaimType = ClaimTypes.Role
+                };
+
+
+                var principal = tokenHandler.ValidateToken(refreshTokenRequest.RefreshToken, tokenValidationParams, out var validatedToken);
+
+                if (validatedToken is not JwtSecurityToken jwtToken)
+                {
+                    throw new SecurityTokenException("Invalid refresh token");
+                }
+                var userId = principal.FindFirst("UserId")?.Value;
+
+                var username = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var role = principal.FindFirst(ClaimTypes.Role)?.Value;
+
+                if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(username) || string.IsNullOrEmpty(role) || !userId.ToString().Equals(refreshTokenRequest.UserId.ToString()))
+                {
+                    throw new SecurityTokenException("Invalid refresh token data");
+                }
+
+                var user = new User
+                {
+                    Id = refreshTokenRequest.UserId,
+                    Username = username,
+                    Role = new Role { Name = role }
+                };
+                Tuple<string, Guid> guidClaim = new Tuple<string, Guid>("UserId", user.Id);
+                return GenerateJwtToken(user, guidClaim);
+            }
+            catch (Exception)
+            {
+                throw new SecurityTokenException("Invalid or expired refresh token");
+            }
+        }
+
     }
 }
 

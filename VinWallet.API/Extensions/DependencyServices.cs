@@ -6,6 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using RoomProto;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using VinWallet.API.Service.Implements;
@@ -101,7 +103,11 @@ public static class DependencyServices
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey =
                     new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes("SuperStrongSecretKeyForJwtToken123!"))
+                        Encoding.UTF8.GetBytes("SuperStrongSecretKeyForJwtToken123!")),
+
+                NameClaimType = JwtRegisteredClaimNames.Sub,
+                RoleClaimType = ClaimTypes.Role,
+                
             };
             options.Events = new JwtBearerEvents
             {

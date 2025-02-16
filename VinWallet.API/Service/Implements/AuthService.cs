@@ -39,5 +39,22 @@ namespace VinWallet.API.Service.Implements
             loginResponse.RefreshToken = token.RefreshToken;
             return loginResponse;
         }
+
+        public async Task<LoginResponse> RefreshToken(RefreshTokenRequest refreshTokenRequest)
+        {
+            var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(refreshTokenRequest.UserId), include: x => x.Include(x => x.Role));
+            if (user == null) throw new BadHttpRequestException(MessageConstant.UserMessage.UserNotFound);
+            var token = JwtUtil.RefreshToken(refreshTokenRequest);
+            LoginResponse loginResponse = new LoginResponse
+            {
+                UserId = user.Id,
+                FullName = user.FullName,
+                Role = user.Role.Name,
+                Status = user.Status,
+                AccessToken = token.AccessToken,
+                RefreshToken = token.RefreshToken
+            };
+            return loginResponse;
+        }
     }
 }

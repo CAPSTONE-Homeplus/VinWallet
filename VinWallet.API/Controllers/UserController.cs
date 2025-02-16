@@ -42,7 +42,7 @@ namespace VinWallet.API.Controllers
             return Ok(response);
         }
 
-        [CustomAuthorize(UserEnum.Role.Member, UserEnum.Role.Member)]
+        [CustomAuthorize(UserEnum.Role.Member, UserEnum.Role.Leader)]
         [HttpGet(ApiEndPointConstant.User.WalletsOfUserEndpoint)]
         [ProducesResponseType(typeof(IPaginate<WalletResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetWalletsOfUser([FromRoute] Guid id, [FromQuery] int page = 1, [FromQuery] int size = 10)
