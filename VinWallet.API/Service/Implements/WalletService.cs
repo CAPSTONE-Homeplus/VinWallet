@@ -42,7 +42,8 @@ namespace VinWallet.API.Service.Implements
         public async Task<IPaginate<WalletResponse>> GetWalletsOfUser(Guid id, int page, int size)
         {
             if(id == Guid.Empty) throw new BadHttpRequestException(MessageConstant.UserMessage.EmptyUserId);
-            if(id.ToString() != GetUserIdFromJwt()) throw new BadHttpRequestException(MessageConstant.UserMessage.NotAllowAction, StatusCodes.Status403Forbidden);
+            var userid = GetUserIdFromJwt();
+            if (id.ToString() != GetUserIdFromJwt()) throw new BadHttpRequestException(MessageConstant.UserMessage.NotAllowAction, StatusCodes.Status403Forbidden);
             var wallets = await _unitOfWork.GetRepository<UserWallet>()
                     .GetPagingListAsync(
                         predicate: x => x.UserId == id,

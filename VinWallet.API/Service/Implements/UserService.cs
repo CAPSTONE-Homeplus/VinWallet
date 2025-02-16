@@ -29,6 +29,8 @@ namespace VinWallet.API.Service.Implements
             if (existUser != null) throw new BadHttpRequestException(MessageConstant.UserMessage.UsernameAlreadyExists);
 
             var room = await _roomGrpcClient.GetRoomGrpcAsync(new RoomGrpcRequest { RoomCode = createUserRequest.RoomCode });
+
+
             if (room.Id.Equals("")) throw new BadHttpRequestException(MessageConstant.RoomMessage.RoomNotFound);
 
             var newUser = _mapper.Map<User>(createUserRequest);
