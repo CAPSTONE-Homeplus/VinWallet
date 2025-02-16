@@ -6,5 +6,6 @@ namespace VinWallet.API.Service.Interfaces
     public interface IAuthService
     {
         Task<LoginResponse> Login(LoginRequest loginRequest);
+        Task<LoginResponse> RefreshToken(RefreshTokenRequest refreshTokenRequest);
     }
 }
