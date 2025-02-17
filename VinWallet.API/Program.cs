@@ -23,7 +23,11 @@ builder.Services.AddConfigSwagger();
 var app = builder.Build();
 
 app.UseRouting();
-app.UseCors("CorsPolicy");
+app.UseCors(builder =>
+    builder.AllowAnyOrigin()
+           .AllowAnyHeader()
+           .AllowAnyMethod()
+);
 
 app.MapHub<VinWalletHub>("/vinWalletHub");
 app.UseMiddleware<ExceptionHandlingMiddleware>();
