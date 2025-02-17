@@ -35,5 +35,12 @@ namespace VinWallet.Repository.Constants
             public const string WalletsEndpoint = ApiEndpoint + "/wallets";
             public const string WalletEndpoint = WalletsEndpoint + "/{id}";
         }
+
+        public static class Transaction
+        {
+            public const string TransactionsEndpoint = ApiEndpoint + "/transactions";
+            public const string TransactionEndpoint = TransactionsEndpoint + "/{id}";
+        }
+
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using VinWallet.API.Extensions;
+using VinWallet.API.Hubs;
 using VinWallet.API.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,7 +22,10 @@ builder.Services.AddConfigSwagger();
 
 var app = builder.Build();
 
+app.UseRouting();
+app.UseCors("CorsPolicy");
 
+app.MapHub<VinWalletHub>("/vinWalletHub");
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseSwagger();
 app.UseSwaggerUI();

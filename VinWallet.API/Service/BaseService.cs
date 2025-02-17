@@ -28,6 +28,12 @@ namespace VinWallet.API.Service
             _httpContextAccessor = httpContextAccessor;
         }
 
+        protected string? GetJwtToken()
+        {
+            return _httpContextAccessor?.HttpContext?.Request.Headers["Authorization"]
+                .ToString().Replace("Bearer ", "");
+        }
+
         protected string GetUsernameFromJwt()
         {
             return _httpContextAccessor?.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
