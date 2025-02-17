@@ -24,5 +24,11 @@ namespace VinWallet.Repository.Constants
             public const string RoomByCodeEndpoint = RoomsEndpoint + "/by-code/{room-code}";
 
         }
+
+        public static class Order
+        {
+            public const string OrdersEndpoint = ApiEndpoint + "/orders";
+            public const string OrderEndpoint = OrdersEndpoint + "/{id}";
+        }
     }
 }

@@ -29,8 +29,8 @@ namespace VinWallet.API.Service.Implements
             var existUser = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.Username.Equals(createUserRequest.Username));
             if (existUser != null) throw new BadHttpRequestException(MessageConstant.UserMessage.UsernameAlreadyExists);
 
-
-            var apiResponse = await CallApiUtils.CallApiGetEndpoint(HomeCleanApiEndPointConstant.Room.RoomByCodeEndpoint, createUserRequest.RoomCode);
+            var url = HomeCleanApiEndPointConstant.Room.RoomByCodeEndpoint.Replace("{room-code}", createUserRequest.RoomCode);
+            var apiResponse = await CallApiUtils.CallApiEndpoint(url, null);
             var room = await CallApiUtils.GenerateObjectFromResponse<RoomResponse>(apiResponse);
             if (room == null) throw new BadHttpRequestException(MessageConstant.RoomMessage.RoomNotFound);
             var newUser = _mapper.Map<User>(createUserRequest);

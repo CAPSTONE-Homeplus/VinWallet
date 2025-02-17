@@ -28,15 +28,30 @@ namespace VinWallet.Repository.Constants
         public static class WalletMessage
         {
             public const string EmptyWalletId = "Wallet id bị trống";
-
             public const string WalletNotFound = "Không tìm thấy ví";
             public const string CreateWalletFailed = "Tạo ví thất bại";
         }
+
+        public static class TransactionMessage
+        {
+            public const string EmptyTransactionId = "Transaction id bị trống";
+            public const string TransactionNotFound = "Không tìm thấy giao dịch";
+            public const string CreateTransactionFailed = "Tạo giao dịch thất bại";
+        }
+
 
         public static class RoomMessage
         {
             public const string RoomNotFound = "Không tìm thấy phòng";
             public const string RoomCodeAlreadyExists = "Mã phòng đã tồn tại";
+        }
+
+        public static class Order
+        {
+            public const string EmptyOrderId = "OrderId bị trống";
+            public const string OrderCodeExist = "Code của Order đã tồn tại";
+            public const string OrderNotFound = "Không tìm thấy Order";
+            public const string CreateFailedOrder = "Tạo mới Order thất bại";
         }
 
         public static class DataBase

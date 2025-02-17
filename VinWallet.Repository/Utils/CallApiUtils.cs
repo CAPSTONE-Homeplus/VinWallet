@@ -33,14 +33,6 @@ namespace VinWallet.Repository.Utils
         }
 
 
-        public static async Task<HttpResponseMessage> CallApiGetEndpoint(string url, string roomCode)
-        {
-            using var httpClient = new HttpClient();
-            string requestUrl = HomeCleanApiEndPointConstant.Room.RoomByCodeEndpoint.Replace("{room-code}", roomCode);
-            var response = await httpClient.GetAsync(requestUrl);
-            return response;
-        }
-
         public static async Task<HttpResponseMessage> CallApiEndpoint(string url, string token)
         {
             using var httpClient = new HttpClient();

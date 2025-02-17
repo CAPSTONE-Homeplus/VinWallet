@@ -38,8 +38,19 @@ public static class DependencyServices
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IWalletService, WalletService>();
+        services.AddScoped<ITransactionService, TransactionService>();
 
 
+        services.AddSignalR();
+        services.AddCors(options =>
+        {
+            options.AddPolicy("CorsPolicy",
+                builder => builder
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials()
+                    .SetIsOriginAllowed((host) => true));
+        });
         services.AddGrpcClient<RoomGrpcService.RoomGrpcServiceClient>(x =>
         {
             x.Address = new Uri("https://localhost:7106");
