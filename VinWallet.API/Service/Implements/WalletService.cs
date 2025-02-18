@@ -13,8 +13,10 @@ namespace VinWallet.API.Service.Implements
 {
     public class WalletService : BaseService<WalletService>, IWalletService
     {
-        public WalletService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<WalletService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, mapper, httpContextAccessor)
+        private readonly IVNPayService _vNPayService;
+        public WalletService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<WalletService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, IVNPayService vNPayService) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
+            _vNPayService = vNPayService;
         }
 
         public async Task<WalletResponse> CreateWallet(CreateWalletRequest createWalletRequest)
@@ -82,6 +84,52 @@ namespace VinWallet.API.Service.Implements
             await _unitOfWork.GetRepository<UserWallet>().InsertAsync(userWallet);
             if (await _unitOfWork.CommitAsync() <= 0) throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
             return true;
+        }
+
+        public async Task<string> TopUpPoints(Guid userId, string amount, Guid walletId)
+        {
+            if (userId == Guid.Empty) throw new BadHttpRequestException(MessageConstant.UserMessage.EmptyUserId);
+            if (string.IsNullOrEmpty(amount)) throw new BadHttpRequestException(MessageConstant.WalletMessage.EmptyAmount);
+
+            var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.Id == userId);
+            if (user == null) throw new BadHttpRequestException(MessageConstant.UserMessage.UserNotFound);
+
+            var wallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate: x => x.Id == walletId);
+            if (wallet == null) throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
+
+            int amountInt = int.Parse(amount);
+            if (amountInt < 10000)
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.MinAmount);
+
+
+            int points = amountInt / 1000;
+
+            // 🔹 Tạo giao dịch với trạng thái "Pending"
+            //var transaction = new WalletTransaction
+            //{
+            //    Id = Guid.NewGuid(),
+            //    UserId = userId,
+            //    WalletId = walletId,
+            //    Amount = amountInt,
+            //    Points = points,
+            //    Status = "Pending",
+            //    CreatedAt = DateTime.UtcNow.AddHours(7),
+            //    UpdatedAt = DateTime.UtcNow.AddHours(7),
+            //};
+
+            //await _unitOfWork.GetRepository<WalletTransaction>().InsertAsync(transaction);
+            await _unitOfWork.CommitAsync();
+
+            // 🔹 Tạo URL thanh toán VNPay
+            string paymentUrl = _vNPayService.GeneratePaymentUrl(amount, Guid.NewGuid().ToString());
+
+            return paymentUrl; // Trả về URL thanh toán
+        }
+
+
+        public Task<WalletResponse> DepositPoints(Guid userId, string amount, Guid walletId)
+        {
+            throw new NotImplementedException();
         }
     }
 }
