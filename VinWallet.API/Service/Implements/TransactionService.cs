@@ -1,7 +1,6 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.SignalR;
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
-using VinWallet.API.Hubs;
 using VinWallet.API.Service.Interfaces;
 using VinWallet.Domain.Models;
 using VinWallet.Repository.Constants;
@@ -16,10 +15,13 @@ namespace VinWallet.API.Service.Implements
 {
     public class TransactionService : BaseService<TransactionService>, ITransactionService
     {
-        private readonly IHubContext<VinWalletHub> _hubContext;
-        public TransactionService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<TransactionService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, IHubContext<VinWalletHub> hubContext) : base(unitOfWork, logger, mapper, httpContextAccessor)
+        private readonly ISignalRHubService _signalRHubService;
+        private readonly IBackgroundJobClient _backgroundJobClient;
+
+        public TransactionService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<TransactionService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISignalRHubService signalRHubService, IBackgroundJobClient backgroundJobClient) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
-            _hubContext = hubContext;
+            _signalRHubService = signalRHubService;
+            _backgroundJobClient = backgroundJobClient;
         }
 
         public async Task<TransactionResponse> CreateTransaction(CreateTransactionRequest createTransactionRequest)
@@ -66,10 +68,8 @@ namespace VinWallet.API.Service.Implements
                 {
                     var leaderId = wallet.OwnerId.ToString();
                     var message = $"User {createTransactionRequest.UserId} has made a transaction of {order.TotalAmount} from Shared Wallet.";
-
-                    await _hubContext.Clients.User(leaderId).SendAsync("ReceiveTransactionNotification", message);
+                    _backgroundJobClient.Enqueue(() => _signalRHubService.SendNotificationToUser(leaderId, message));
                 }
-
             }
             return _mapper.Map<TransactionResponse>(transaction);
         }

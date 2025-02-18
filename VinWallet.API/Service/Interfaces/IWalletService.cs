@@ -1,4 +1,5 @@
-﻿using VinWallet.Domain.Paginate;
+﻿using VinWallet.Domain.Models;
+using VinWallet.Domain.Paginate;
 using VinWallet.Repository.Payload.Request.WalletRequest;
 using VinWallet.Repository.Payload.Response.WalletResponse;
 
@@ -13,7 +14,7 @@ namespace VinWallet.API.Service.Interfaces
         Task<IPaginate<WalletResponse>> GetWalletsOfUser(Guid id, int page, int size);
 
         Task<bool> ConnectWalletToUser(Guid? userId, Guid walletId);
-        Task<string> TopUpPoints(Guid userId, string amount, Guid walletId);
-        Task<WalletResponse> DepositPoints(Guid userId, string amount, Guid walletId);
+
+        Task CreateAndConnectWalletToUser(Guid userId, Role role, Guid roomId);
     }
 }

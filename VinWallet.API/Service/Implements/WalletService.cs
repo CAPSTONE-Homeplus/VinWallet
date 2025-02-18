@@ -6,6 +6,7 @@ using VinWallet.Domain.Paginate;
 using VinWallet.Repository.Constants;
 using VinWallet.Repository.Enums;
 using VinWallet.Repository.Generic.Interfaces;
+using VinWallet.Repository.Payload.Request.UserRequest;
 using VinWallet.Repository.Payload.Request.WalletRequest;
 using VinWallet.Repository.Payload.Response.WalletResponse;
 
@@ -86,50 +87,42 @@ namespace VinWallet.API.Service.Implements
             return true;
         }
 
-        public async Task<string> TopUpPoints(Guid userId, string amount, Guid walletId)
+        public async Task CreateAndConnectWalletToUser(Guid userId, Role role, Guid roomId)
         {
-            if (userId == Guid.Empty) throw new BadHttpRequestException(MessageConstant.UserMessage.EmptyUserId);
-            if (string.IsNullOrEmpty(amount)) throw new BadHttpRequestException(MessageConstant.WalletMessage.EmptyAmount);
+            var newUser = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(userId),
+                include: x => x.Include(x => x.Role));
 
-            var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.Id == userId);
-            if (user == null) throw new BadHttpRequestException(MessageConstant.UserMessage.UserNotFound);
+            var walletRequest = new CreateWalletRequest
+            {
+                Name = WalletEnum.WalletType.Personal.ToString() + newUser.Username,
+                Type = WalletEnum.WalletType.Personal.ToString(),
+                OwnerId = newUser.Id
+            };
 
-            var wallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate: x => x.Id == walletId);
-            if (wallet == null) throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
+            var wallet = await CreateWallet(walletRequest);
+            await ConnectWalletToUser(newUser.Id, wallet.Id);
 
-            int amountInt = int.Parse(amount);
-            if (amountInt < 10000)
-                throw new BadHttpRequestException(MessageConstant.WalletMessage.MinAmount);
+            if (role.Name.Equals(UserEnum.Role.Leader.ToString()))
+            {
 
+                var walletRequestLeader = new CreateWalletRequest
+                {
+                    Name = WalletEnum.WalletType.Shared.ToString() + roomId.ToString(),
+                    Type = WalletEnum.WalletType.Shared.ToString(),
+                    OwnerId = newUser.Id
+                };
+                var walletLeader = await CreateWallet(walletRequestLeader);
+                await ConnectWalletToUser(newUser.Id, wallet.Id);
 
-            int points = amountInt / 1000;
-
-            // 🔹 Tạo giao dịch với trạng thái "Pending"
-            //var transaction = new WalletTransaction
-            //{
-            //    Id = Guid.NewGuid(),
-            //    UserId = userId,
-            //    WalletId = walletId,
-            //    Amount = amountInt,
-            //    Points = points,
-            //    Status = "Pending",
-            //    CreatedAt = DateTime.UtcNow.AddHours(7),
-            //    UpdatedAt = DateTime.UtcNow.AddHours(7),
-            //};
-
-            //await _unitOfWork.GetRepository<WalletTransaction>().InsertAsync(transaction);
-            await _unitOfWork.CommitAsync();
-
-            // 🔹 Tạo URL thanh toán VNPay
-            string paymentUrl = _vNPayService.GeneratePaymentUrl(amount, Guid.NewGuid().ToString());
-
-            return paymentUrl; // Trả về URL thanh toán
-        }
-
-
-        public Task<WalletResponse> DepositPoints(Guid userId, string amount, Guid walletId)
-        {
-            throw new NotImplementedException();
+            }
+            else
+            {
+                var leader = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.RoomId.Equals(roomId) && x.Role.Name.Equals(UserEnum.Role.Leader.ToString()),
+                   include: x => x.Include(x => x.Role));
+                var sharedWallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate: x => x.OwnerId.Equals(leader.Id) &&
+                x.Type.Equals(WalletEnum.WalletType.Shared.ToString()));
+                await ConnectWalletToUser(newUser.Id, sharedWallet.Id);
+            }
         }
     }
 }
