@@ -1,5 +1,6 @@
 ﻿using VinWallet.Domain.Models;
 using VinWallet.Domain.Paginate;
+using VinWallet.Repository.Enums;
 using VinWallet.Repository.Payload.Request.WalletRequest;
 using VinWallet.Repository.Payload.Response.WalletResponse;
 
@@ -16,5 +17,7 @@ namespace VinWallet.API.Service.Interfaces
         Task<bool> ConnectWalletToUser(Guid? userId, Guid walletId);
 
         Task CreateAndConnectWalletToUser(Guid userId, Role role, Guid roomId);
+
+        Task<bool> UpdateWalletBalance(Guid walletId, string amount, TransactionCategoryEnum.TransactionCategory transactionCategory);
     }
 }

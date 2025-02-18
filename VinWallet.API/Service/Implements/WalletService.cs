@@ -121,6 +121,27 @@ namespace VinWallet.API.Service.Implements
                 x.Type.Equals(WalletEnum.WalletType.Shared.ToString()));
                 await ConnectWalletToUser(newUser.Id, sharedWallet.Id);
             }
+
+            
+        }
+
+        public async Task<bool> UpdateWalletBalance(Guid walletId, string amount, TransactionCategoryEnum.TransactionCategory transactionCategory)
+        {
+            if(walletId == Guid.Empty) throw new BadHttpRequestException(MessageConstant.WalletMessage.EmptyWalletId);
+            var wallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(walletId));
+            if (wallet == null) throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
+            if (transactionCategory == TransactionCategoryEnum.TransactionCategory.Deposit)
+            {
+                wallet.Balance += decimal.Parse(amount);
+            }
+            else
+            {
+                wallet.Balance -= decimal.Parse(amount);
+            }
+            wallet.UpdatedAt = DateTime.UtcNow.AddHours(7);
+            _unitOfWork.GetRepository<Wallet>().UpdateAsync(wallet);
+            if (await _unitOfWork.CommitAsync() <= 0) return false;
+            return true;
         }
     }
 }

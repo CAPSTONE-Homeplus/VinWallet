@@ -17,11 +17,13 @@ namespace VinWallet.API.Service.Implements
     {
         private readonly ISignalRHubService _signalRHubService;
         private readonly IBackgroundJobClient _backgroundJobClient;
+        private readonly IWalletService _walletService;
 
-        public TransactionService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<TransactionService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISignalRHubService signalRHubService, IBackgroundJobClient backgroundJobClient) : base(unitOfWork, logger, mapper, httpContextAccessor)
+        public TransactionService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<TransactionService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISignalRHubService signalRHubService, IBackgroundJobClient backgroundJobClient, IWalletService walletService) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
             _signalRHubService = signalRHubService;
             _backgroundJobClient = backgroundJobClient;
+            _walletService = walletService;
         }
 
         public async Task<TransactionResponse> CreateTransaction(CreateTransactionRequest createTransactionRequest)
@@ -43,6 +45,7 @@ namespace VinWallet.API.Service.Implements
                 transaction.CreatedAt = DateTime.UtcNow.AddHours(7);
                 transaction.UpdatedAt = DateTime.UtcNow.AddHours(7);
                 transaction.Code = order.Code;
+                transaction.Status = TransactionEnum.TransactionStatus.Pending.ToString();
 
                 var category = await _unitOfWork.GetRepository<Category>().SingleOrDefaultAsync(predicate: x => x.Name.Equals(TransactionCategoryEnum.TransactionCategory.Spending.ToString()));
                 transaction.CategoryId = category.Id;
@@ -54,8 +57,6 @@ namespace VinWallet.API.Service.Implements
                 if (userWallet == null) throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
 
                 var wallet = userWallet.Wallet;
-                wallet.Balance = wallet.Balance - order.TotalAmount;
-                _unitOfWork.GetRepository<Wallet>().UpdateAsync(wallet);
                 if (await _unitOfWork.CommitAsync() <= 0)
                 {
                     transaction.Status = TransactionEnum.TransactionStatus.Failed.ToString();
@@ -72,6 +73,41 @@ namespace VinWallet.API.Service.Implements
                 }
             }
             return _mapper.Map<TransactionResponse>(transaction);
+        }
+
+
+
+        public async Task<bool> ProcessPayment(CreateTransactionRequest createTransactionRequest)
+        {
+            if (createTransactionRequest.OrderId != null)
+            {
+                var response = await CreateTransaction(createTransactionRequest);
+                var success = await _walletService.UpdateWalletBalance(createTransactionRequest.WalletId, createTransactionRequest.Amount, TransactionCategoryEnum.TransactionCategory.Spending);
+                var status = success == true ? TransactionEnum.TransactionStatus.Success : TransactionEnum.TransactionStatus.Failed;
+                _backgroundJobClient.Enqueue(() => UpdateTransactionStatus(response.Id, status));
+                return success;
+            }
+            else
+            {
+                var response = await CreateTransaction(createTransactionRequest);
+                if (response == null) return false;
+                //VNPAy
+                return true;
+            }
+        }
+
+
+
+        public async Task<bool> UpdateTransactionStatus(Guid id, TransactionEnum.TransactionStatus transactionStatus)
+        {
+            if (id == Guid.Empty) throw new BadHttpRequestException(MessageConstant.TransactionMessage.EmptyTransactionId);
+            var transaction =await _unitOfWork.GetRepository<Transaction>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(id));
+            if (transaction == null) throw new BadHttpRequestException(MessageConstant.TransactionMessage.TransactionNotFound);
+            transaction.Status = transactionStatus.ToString();
+            transaction.UpdatedAt = DateTime.UtcNow.AddHours(7);
+            _unitOfWork.GetRepository<Transaction>().UpdateAsync(transaction);
+            if (await _unitOfWork.CommitAsync() <= 0) return false;
+            return true;
         }
     }
 }

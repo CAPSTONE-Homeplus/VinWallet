@@ -9,7 +9,7 @@ namespace VinWallet.Repository.Payload.Request.TransactionRequest
 {
     public class CreateTransactionRequest
     {
-        public Guid? WalletId { get; set; }
+        public Guid WalletId { get; set; }
 
         [Required(ErrorMessage = "UserId is required")]
         public Guid? UserId { get; set; }
@@ -18,7 +18,7 @@ namespace VinWallet.Repository.Payload.Request.TransactionRequest
         public Guid? PaymentMethodId { get; set; }
 
         [Required(ErrorMessage = "Amount is required")]
-        public string? Amount { get; set; }
+        public string Amount { get; set; }
 
         public string? Note { get; set; }
 
