@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
-using Azure.Messaging;
+using Hangfire;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using VinWallet.API.Service.Interfaces;
@@ -14,17 +15,22 @@ namespace VinWallet.API.Service.Implements
 {
     public class AuthService : BaseService<AuthService>, IAuthService
     {
-        public AuthService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<AuthService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, mapper, httpContextAccessor)
+        private readonly ISignalRHubService _signalRHubService;
+        private readonly IBackgroundJobClient _backgroundJobClient;
+
+        public AuthService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<AuthService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISignalRHubService signalRHubService, IBackgroundJobClient backgroundJobClient) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
+            _signalRHubService = signalRHubService;
+            _backgroundJobClient = backgroundJobClient;
         }
 
         public async Task<LoginResponse> Login(LoginRequest loginRequest)
         {
-            Expression<Func<User, bool>> searchFilter = p =>
+            Expression<Func<Domain.Models.User, bool>> searchFilter = p =>
                p.Username.Equals(loginRequest.Username) &&
                p.Password.Equals(PasswordUtil.HashPassword(loginRequest.Password));
 
-            User user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: searchFilter,include: x=> x.Include(x => x.Role));
+            Domain.Models.User user = await _unitOfWork.GetRepository<Domain.Models.User>().SingleOrDefaultAsync(predicate: searchFilter,include: x=> x.Include(x => x.Role));
             if (user == null) throw new BadHttpRequestException(MessageConstant.LoginMessage.InvalidUsernameOrPassword);
             LoginResponse loginResponse = new LoginResponse
             {
@@ -37,12 +43,13 @@ namespace VinWallet.API.Service.Implements
             var token = JwtUtil.GenerateJwtToken(user, guidClaim);
             loginResponse.AccessToken = token.AccessToken;
             loginResponse.RefreshToken = token.RefreshToken;
+            _backgroundJobClient.Enqueue(() => _signalRHubService.SendNotificationToAll("Tuan Anh test SinalR to All"));
             return loginResponse;
         }
 
         public async Task<LoginResponse> RefreshToken(RefreshTokenRequest refreshTokenRequest)
         {
-            var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(refreshTokenRequest.UserId), include: x => x.Include(x => x.Role));
+            var user = await _unitOfWork.GetRepository<Domain.Models.User>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(refreshTokenRequest.UserId), include: x => x.Include(x => x.Role));
             if (user == null) throw new BadHttpRequestException(MessageConstant.UserMessage.UserNotFound);
             var token = JwtUtil.RefreshToken(refreshTokenRequest);
             LoginResponse loginResponse = new LoginResponse
@@ -54,6 +61,8 @@ namespace VinWallet.API.Service.Implements
                 AccessToken = token.AccessToken,
                 RefreshToken = token.RefreshToken
             };
+
+            _backgroundJobClient.Enqueue(() => _signalRHubService.SendNotificationToUser("161e1a9d-8bca-48c6-b52e-9814594f685b", "Tuan Anh test SinalR to User"));
             return loginResponse;
         }
     }

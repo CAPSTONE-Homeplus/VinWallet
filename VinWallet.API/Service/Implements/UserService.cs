@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using RoomProto;
 using VinWallet.API.Service.Interfaces;
@@ -18,10 +19,13 @@ namespace VinWallet.API.Service.Implements
     {
         private readonly RoomGrpcService.RoomGrpcServiceClient _roomGrpcClient;
         private readonly IWalletService _walletService;
-        public UserService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<UserService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, RoomGrpcService.RoomGrpcServiceClient roomGrpcClient, IWalletService walletService) : base(unitOfWork, logger, mapper, httpContextAccessor)
+        private readonly IBackgroundJobClient _backgroundJobClient;
+        public UserService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<UserService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, RoomGrpcService.RoomGrpcServiceClient roomGrpcClient, IWalletService walletService, IBackgroundJobClient backgroundJobClient) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
             _roomGrpcClient = roomGrpcClient;
             _walletService = walletService;
+            _backgroundJobClient = backgroundJobClient;
+
         }
 
         public async Task<UserResponse> CreateUser(CreateUserRequest createUserRequest)
@@ -59,40 +63,7 @@ namespace VinWallet.API.Service.Implements
             await _unitOfWork.GetRepository<User>().InsertAsync(newUser);
             if (await _unitOfWork.CommitAsync() <= 0) throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
 
-
-
-            var walletRequest = new CreateWalletRequest
-            {
-                Name = WalletEnum.WalletType.Personal.ToString() + newUser.Username,
-                Type = WalletEnum.WalletType.Personal.ToString(),
-                OwnerId = newUser.Id
-            };
-            var wallet = await _walletService.CreateWallet(walletRequest);
-            await _walletService.ConnectWalletToUser(newUser.Id, wallet.Id);
-
-            if (role.Name.Equals(UserEnum.Role.Leader.ToString()))
-            {
-
-                var walletRequestLeader = new CreateWalletRequest
-                {
-                    Name = WalletEnum.WalletType.Shared.ToString() + createUserRequest.RoomCode,
-                    Type = WalletEnum.WalletType.Shared.ToString(),
-                    OwnerId = newUser.Id
-                };
-                var walletLeader = await _walletService.CreateWallet(walletRequestLeader);
-                await _walletService.ConnectWalletToUser(newUser.Id, wallet.Id);
-
-            }
-            else
-            {
-
-                var leader = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.RoomId.Equals(room.Id) && x.Role.Name.Equals(UserEnum.Role.Leader.ToString()),
-                   include: x => x.Include(x => x.Role));
-                var sharedWallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate: x => x.OwnerId.Equals(leader.Id) &&
-                x.Type.Equals(WalletEnum.WalletType.Shared.ToString()));
-                await _walletService.ConnectWalletToUser(newUser.Id, sharedWallet.Id);
-
-            }
+            _backgroundJobClient.Enqueue(() => _walletService.CreateAndConnectWalletToUser(newUser.Id, role, room.Id));
 
             var response = _mapper.Map<UserResponse>(newUser);
             response.Role = role.Name;

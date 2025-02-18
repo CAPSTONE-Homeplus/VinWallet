@@ -6,6 +6,7 @@ using VinWallet.Domain.Paginate;
 using VinWallet.Repository.Constants;
 using VinWallet.Repository.Enums;
 using VinWallet.Repository.Generic.Interfaces;
+using VinWallet.Repository.Payload.Request.UserRequest;
 using VinWallet.Repository.Payload.Request.WalletRequest;
 using VinWallet.Repository.Payload.Response.WalletResponse;
 
@@ -82,6 +83,44 @@ namespace VinWallet.API.Service.Implements
             await _unitOfWork.GetRepository<UserWallet>().InsertAsync(userWallet);
             if (await _unitOfWork.CommitAsync() <= 0) throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
             return true;
+        }
+
+        public async Task CreateAndConnectWalletToUser(Guid userId, Role role, Guid roomId)
+        {
+            var newUser = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(userId),
+                include: x => x.Include(x => x.Role));
+
+            var walletRequest = new CreateWalletRequest
+            {
+                Name = WalletEnum.WalletType.Personal.ToString() + newUser.Username,
+                Type = WalletEnum.WalletType.Personal.ToString(),
+                OwnerId = newUser.Id
+            };
+
+            var wallet = await CreateWallet(walletRequest);
+            await ConnectWalletToUser(newUser.Id, wallet.Id);
+
+            if (role.Name.Equals(UserEnum.Role.Leader.ToString()))
+            {
+
+                var walletRequestLeader = new CreateWalletRequest
+                {
+                    Name = WalletEnum.WalletType.Shared.ToString() + roomId.ToString(),
+                    Type = WalletEnum.WalletType.Shared.ToString(),
+                    OwnerId = newUser.Id
+                };
+                var walletLeader = await CreateWallet(walletRequestLeader);
+                await ConnectWalletToUser(newUser.Id, wallet.Id);
+
+            }
+            else
+            {
+                var leader = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.RoomId.Equals(roomId) && x.Role.Name.Equals(UserEnum.Role.Leader.ToString()),
+                   include: x => x.Include(x => x.Role));
+                var sharedWallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate: x => x.OwnerId.Equals(leader.Id) &&
+                x.Type.Equals(WalletEnum.WalletType.Shared.ToString()));
+                await ConnectWalletToUser(newUser.Id, sharedWallet.Id);
+            }
         }
     }
 }

@@ -113,7 +113,6 @@ namespace VinWallet.Repository.Utils
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey =
                          new SymmetricSecurityKey(Encoding.UTF8.GetBytes(refreshTokenSecret)),
-                    NameClaimType = JwtRegisteredClaimNames.Sub,
                     RoleClaimType = ClaimTypes.Role
                 };
 
