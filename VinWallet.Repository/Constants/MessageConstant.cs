@@ -30,6 +30,8 @@ namespace VinWallet.Repository.Constants
             public const string EmptyWalletId = "Wallet id bị trống";
             public const string WalletNotFound = "Không tìm thấy ví";
             public const string CreateWalletFailed = "Tạo ví thất bại";
+            public const string EmptyAmount = "Số tiền không được để trống";
+            public const string MinAmount = "Số tiền nạp tối thiểu là 10,000 VND";
         }
 
         public static class TransactionMessage
