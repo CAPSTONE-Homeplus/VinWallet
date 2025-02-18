@@ -1,8 +1,11 @@
 ﻿
 using Grpc.Net.Client;
+using Hangfire.SqlServer;
+using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder.Extensions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using RoomProto;
@@ -15,6 +18,7 @@ using VinWallet.API.Service.Interfaces;
 using VinWallet.Domain.Models;
 using VinWallet.Repository.Generic.Implements;
 using VinWallet.Repository.Generic.Interfaces;
+using VinWallet.API.Service;
 
 namespace VinWallet.API.Extensions;
 
@@ -33,20 +37,29 @@ public static class DependencyServices
         return services;
     }
 
+
     public static IServiceCollection AddServices(this IServiceCollection services, IConfiguration configuration)
     {
+
+        services.AddTransient<IBackgroundJobClient, BackgroundJobClient>();
+
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IWalletService, WalletService>();
         services.AddScoped<ITransactionService, TransactionService>();
+        services.AddScoped<ISignalRHubService, SignalRHubService>();
 
-        
+        services.AddHangfire(x => x.UseSqlServerStorage(configuration.GetConnectionString("HangfireConnection")));
+        services.AddHangfireServer();
+
+        //services.AddHostedService<BackgroundJobService>();
         services.AddSignalR();
         services.AddGrpcClient<RoomGrpcService.RoomGrpcServiceClient>(x =>
         {
             x.Address = new Uri("https://localhost:7106");
             //x.Address = new Uri("https://homeclean.onrender.com");
         });
+
         return services;
     }
 
