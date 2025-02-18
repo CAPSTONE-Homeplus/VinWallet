@@ -15,6 +15,7 @@ using System.Text;
 using System.Text.Json;
 using VinWallet.API.Service.Implements;
 using VinWallet.API.Service.Interfaces;
+using VinWallet.API.VnPay;
 using VinWallet.Domain.Models;
 using VinWallet.Repository.Generic.Implements;
 using VinWallet.Repository.Generic.Interfaces;
@@ -53,6 +54,10 @@ public static class DependencyServices
         services.AddHangfireServer();
 
         //services.AddHostedService<BackgroundJobService>();
+        services.Configure<VNPaySettings>(configuration.GetSection("VNPaySettings"));
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<VNPaySettings>>().Value);
+        services.AddScoped<IVNPayService, VNPayService>();
+
         services.AddSignalR();
         services.AddGrpcClient<RoomGrpcService.RoomGrpcServiceClient>(x =>
         {
