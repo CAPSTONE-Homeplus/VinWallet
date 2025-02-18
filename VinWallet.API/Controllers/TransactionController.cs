@@ -17,19 +17,19 @@ namespace VinWallet.API.Controllers
             _transactionService = transactionService;
         }
 
-        [CustomAuthorize(UserEnum.Role.Leader, UserEnum.Role.Member)]
-        [HttpPost(ApiEndPointConstant.Transaction.TransactionsEndpoint)]
-        [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status200OK)]
-        public async Task<IActionResult> CreateTransaction([FromBody] CreateTransactionRequest createTransactionRequest)
-        {
-            var response = await _transactionService.CreateTransaction(createTransactionRequest);
-            if (response == null)
-            {
-                return Problem($"{MessageConstant.TransactionMessage.CreateTransactionFailed}: {createTransactionRequest.Amount}");
-            }
+        //[CustomAuthorize(UserEnum.Role.Leader, UserEnum.Role.Member)]
+        //[HttpPost(ApiEndPointConstant.Transaction.TransactionsEndpoint)]
+        //[ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status200OK)]
+        //public async Task<IActionResult> CreateTransaction([FromBody] CreateTransactionRequest createTransactionRequest)
+        //{
+        //    var response = await _transactionService.CreateTransaction(createTransactionRequest);
+        //    if (response == null)
+        //    {
+        //        return Problem($"{MessageConstant.TransactionMessage.CreateTransactionFailed}: {createTransactionRequest.Amount}");
+        //    }
 
-            return CreatedAtAction(nameof(CreateTransaction), response);
-        }
+        //    return CreatedAtAction(nameof(CreateTransaction), response);
+        //}
 
     }
 }
