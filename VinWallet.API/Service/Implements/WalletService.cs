@@ -112,7 +112,7 @@ namespace VinWallet.API.Service.Implements
                     OwnerId = newUser.Id
                 };
                 var walletLeader = await CreateWallet(walletRequestLeader);
-                await ConnectWalletToUser(newUser.Id, wallet.Id);
+                await ConnectWalletToUser(newUser.Id, walletLeader.Id);
 
             }
             else
@@ -138,7 +138,7 @@ namespace VinWallet.API.Service.Implements
             }
             else
             {
-                wallet.Balance -= decimal.Parse(amount);
+                wallet.Balance -= decimal.Parse(amount);    
             }
             wallet.UpdatedAt = DateTime.UtcNow.AddHours(7);
             _unitOfWork.GetRepository<Wallet>().UpdateAsync(wallet);
