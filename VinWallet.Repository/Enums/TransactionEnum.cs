@@ -14,5 +14,10 @@ namespace VinWallet.Repository.Enums
             Success = 2,
             Failed = 3
         }
+        public enum TransactionType
+        {
+            Deposit = 1,
+            Spending = 2,
+        }
     }
 }

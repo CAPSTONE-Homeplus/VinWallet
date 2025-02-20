@@ -20,6 +20,8 @@ namespace VinWallet.Repository.Payload.Response.TransactionResponse
 
         public string? Type { get; set; }
 
+        public string? PaymentUrl { get; set; }
+
         public string? Note { get; set; }
 
         public DateTime? TransactionDate { get; set; }

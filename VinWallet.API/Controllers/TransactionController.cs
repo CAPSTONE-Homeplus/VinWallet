@@ -31,5 +31,20 @@ namespace VinWallet.API.Controllers
         //    return CreatedAtAction(nameof(CreateTransaction), response);
         //}
 
+        [CustomAuthorize(UserEnum.Role.Leader, UserEnum.Role.Member)]
+        [HttpPost(ApiEndPointConstant.Transaction.TransactionsEndpoint)]
+        [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ProcessPayment([FromBody] CreateTransactionRequest request)
+        {
+            var response = await _transactionService.ProcessPayment(request);
+            if (response == null)
+            {
+                return Problem($"{MessageConstant.TransactionMessage.CreateTransactionFailed}: {request.Amount}");
+            }
+
+            return CreatedAtAction(nameof(ProcessPayment), response);
+
+        }
+
     }
 }

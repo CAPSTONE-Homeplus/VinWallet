@@ -126,10 +126,11 @@ namespace VinWallet.Repository.Generic.Implements
 
         #region Insert
 
-        public async Task InsertAsync(T entity)
+        public async Task<T> InsertAsync(T entity)
         {
-            if (entity == null) return;
+            if (entity == null) return null;
             await _dbSet.AddAsync(entity);
+            return entity;
         }
 
         public async Task InsertRangeAsync(IEnumerable<T> entities)
