@@ -14,10 +14,10 @@ namespace VinWallet.API.Service.Implements
 {
     public class WalletService : BaseService<WalletService>, IWalletService
     {
-        private readonly IVNPayService _vNPayService;
-        public WalletService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<WalletService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, IVNPayService vNPayService) : base(unitOfWork, logger, mapper, httpContextAccessor)
+
+        public WalletService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<WalletService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
-            _vNPayService = vNPayService;
+
         }
 
         public async Task<WalletResponse> CreateWallet(CreateWalletRequest createWalletRequest)

@@ -10,7 +10,8 @@ namespace VinWallet.Repository.Mapper.TransactionMapper
         public TransactionMapper()
         {
             CreateMap<CreateTransactionRequest, Transaction>();
-            CreateMap<Transaction, TransactionResponse>();
+            CreateMap<Transaction, TransactionResponse>().ReverseMap();
+
         }
     }
 }

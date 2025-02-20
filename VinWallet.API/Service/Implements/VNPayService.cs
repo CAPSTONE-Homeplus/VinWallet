@@ -1,10 +1,14 @@
 ﻿using AutoMapper;
+using Azure.Core;
 using System.Net;
 using System.Web;
 using VinWallet.API.Service.Interfaces;
 using VinWallet.API.VnPay;
 using VinWallet.Domain.Models;
+using VinWallet.Repository.Constants;
+using VinWallet.Repository.Enums;
 using VinWallet.Repository.Generic.Interfaces;
+using VinWallet.Repository.Payload.Response.VnPayDto;
 using VinWallet.Repository.Utils;
 
 namespace VinWallet.API.Service.Implements
@@ -12,10 +16,15 @@ namespace VinWallet.API.Service.Implements
     public class VNPayService : BaseService<VNPayService>, IVNPayService
     {
         private readonly VNPaySettings _vnPaySettings;
+        private readonly IWalletService _walletService;
 
-        public VNPayService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<VNPayService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, VNPaySettings vNPaySettings) : base(unitOfWork, logger, mapper, httpContextAccessor)
+
+
+        public VNPayService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<VNPayService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, VNPaySettings vNPaySettings, IWalletService walletService) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
             _vnPaySettings = vNPaySettings;
+            _walletService = walletService;
+
         }
 
         public string GeneratePaymentUrl(string amount, string infor)
@@ -43,28 +52,74 @@ namespace VinWallet.API.Service.Implements
             return paymentUrl;
         }
 
-        public async Task<bool> ProcessPaymentConfirmation(string queryString)
+        public async Task<VnPayPaymentConfirmDto> ProcessPaymentConfirmation(string queryString)
         {
+            var paymentData = new VnPayPaymentConfirmDto();
+
             if (!string.IsNullOrEmpty(queryString))
             {
                 var json = HttpUtility.ParseQueryString(queryString);
 
-                long orderId = Convert.ToInt64(json["vnp_TxnRef"]);
-                string orderInfo = json["vnp_OrderInfo"]?.ToString();
-                long vnpayTranId = Convert.ToInt64(json["vnp_TransactionNo"]);
-                string vnp_ResponseCode = json["vnp_ResponseCode"]?.ToString();
-                string vnp_SecureHash = json["vnp_SecureHash"]?.ToString();
-                var pos = queryString.IndexOf("&vnp_SecureHash");
+                paymentData.VnpTxnRef = json["vnp_TxnRef"];
+                paymentData.VnpOrderInfo = json["vnp_OrderInfo"];
+                paymentData.VnpTransactionNo = json["vnp_TransactionNo"];
+                paymentData.VnpResponseCode = json["vnp_ResponseCode"];
+                paymentData.VnpSecureHash = json["vnp_SecureHash"];
+                paymentData.VnpTmnCode = json["vnp_TmnCode"];
 
-                bool checkSignature = ValidateSignature(queryString.Substring(1, pos - 1), vnp_SecureHash, _vnPaySettings.HashSecret);
-
-                if (checkSignature && _vnPaySettings.TmnCode == json["vnp_TmnCode"]?.ToString())
+                if (!long.TryParse(paymentData.VnpTxnRef, out long orderId) ||
+                    !long.TryParse(paymentData.VnpTransactionNo, out long vnpayTranId))
                 {
-                    return vnp_ResponseCode == "00";
+                    paymentData.IsValidSignature = false;
+                    paymentData.IsSuccess = false;
+                    return paymentData;
+                }
+
+                int pos = queryString.IndexOf("&vnp_SecureHash");
+                string dataToVerify = queryString.Substring(1, pos - 1);
+
+                paymentData.IsValidSignature = ValidateSignature(dataToVerify, paymentData.VnpSecureHash, _vnPaySettings.HashSecret);
+
+                paymentData.IsSuccess = paymentData.IsValidSignature &&
+                                        _vnPaySettings.TmnCode == paymentData.VnpTmnCode &&
+                                        paymentData.VnpResponseCode == "00";
+
+                var transaction = await _unitOfWork.GetRepository<Transaction>().SingleOrDefaultAsync(predicate: x => x.Id.ToString().Equals(paymentData.VnpOrderInfo));
+
+                if (paymentData.IsSuccess && transaction != null)
+                {
+                   
+                    var success = await _walletService.UpdateWalletBalance(transaction.WalletId ?? Guid.Empty, transaction.Amount, TransactionCategoryEnum.TransactionCategory.Deposit);
+                    var status = success ?
+                    TransactionEnum.TransactionStatus.Success :
+                    TransactionEnum.TransactionStatus.Failed;
+
+                    await UpdateTransactionStatus(transaction.Id, status);
+
+                }
+                else
+                {
+                    await UpdateTransactionStatus(transaction.Id, TransactionEnum.TransactionStatus.Failed);
                 }
             }
+            else
+            {
+                paymentData.IsValidSignature = false;
+                paymentData.IsSuccess = false;
+            }
 
-            return false;
+            return paymentData;
+        }
+        public async Task<bool> UpdateTransactionStatus(Guid id, TransactionEnum.TransactionStatus transactionStatus)
+        {
+            if (id == Guid.Empty) throw new BadHttpRequestException(MessageConstant.TransactionMessage.EmptyTransactionId);
+            var transaction = await _unitOfWork.GetRepository<Transaction>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(id));
+            if (transaction == null) throw new BadHttpRequestException(MessageConstant.TransactionMessage.TransactionNotFound);
+            transaction.Status = transactionStatus.ToString();
+            transaction.UpdatedAt = DateTime.UtcNow.AddHours(7);
+            _unitOfWork.GetRepository<Transaction>().UpdateAsync(transaction);
+            if (await _unitOfWork.CommitAsync() <= 0) return false;
+            return true;
         }
 
         private bool ValidateSignature(string rspraw, string inputHash, string secretKey)

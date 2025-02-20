@@ -33,6 +33,8 @@ public partial class Transaction
 
     public Guid? OrderId { get; set; }
 
+    public string? PaymentUrl { get; set; }
+
     public virtual Category? Category { get; set; }
 
     public virtual PaymentMethod? PaymentMethod { get; set; }

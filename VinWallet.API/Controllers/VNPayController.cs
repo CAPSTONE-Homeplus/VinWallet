@@ -25,15 +25,35 @@ namespace VinWallet.API.Controllers
         {
             if (Request.QueryString.HasValue)
             {
-                bool isSuccess = await _vnpayService.ProcessPaymentConfirmation(Request.QueryString.Value);
-                if (isSuccess)
+                // Xử lý xác nhận thanh toán và nhận kết quả dưới dạng DTO
+                var paymentData = await _vnpayService.ProcessPaymentConfirmation(Request.QueryString.Value);
+
+                if (paymentData.IsSuccess)
                 {
-                    return Ok("Payment successful");
+                    return Ok(new
+                    {
+                        Message = "Payment successful",
+                        TransactionId = paymentData.VnpTransactionNo,
+                        OrderId = paymentData.VnpTxnRef,
+                        OrderInfo = paymentData.VnpOrderInfo,
+                        BankCode = paymentData.VnpTmnCode,
+                        SignatureValid = paymentData.IsValidSignature
+                    });
                 }
-                return StatusCode(402, "Payment failed");
+
+                return StatusCode(402, new
+                {
+                    Message = "Payment failed",
+                    TransactionId = paymentData.VnpTransactionNo,
+                    OrderId = paymentData.VnpTxnRef,
+                    OrderInfo = paymentData.VnpOrderInfo,
+                    BankCode = paymentData.VnpTmnCode,
+                    SignatureValid = paymentData.IsValidSignature
+                });
             }
 
-            return StatusCode(500, "Invalid request");
+            return StatusCode(400, new { Message = "Invalid request" });
         }
+
     }
 }
