@@ -48,5 +48,11 @@ namespace VinWallet.Repository.Constants
             public const string Payment = VNPayEndpoint + "/payment/{amount}/{infor}";
             public const string PaymentConfirm = VNPayEndpoint + "/paymentconfirm";
         }
+
+        public static class PaymentMethod
+        {
+            public const string PaymentMethodsEndpoint = ApiEndpoint + "/payment-methods";
+            public const string PaymentMethodEndpoint = PaymentMethodsEndpoint + "/{id}";
+        }
     }
 }
