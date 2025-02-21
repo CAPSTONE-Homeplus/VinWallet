@@ -1,12 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System;
-using System.Collections.Generic;
+﻿using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
 using System.Security.Claims;
 using System.Text;
-using System.Threading.Tasks;
 using VinWallet.Domain.Models;
 using VinWallet.Repository.Payload.Request;
 
@@ -32,8 +27,8 @@ namespace VinWallet.Repository.Utils
             List<Claim> accessClaims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(JwtRegisteredClaimNames.Sub, user.Username),
             new Claim(ClaimTypes.Role, user.Role.Name),
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
         };
 
             if (guidClaim != null)
@@ -58,8 +53,9 @@ namespace VinWallet.Repository.Utils
             List<Claim> refreshClaims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(JwtRegisteredClaimNames.Sub, user.Username),
             new Claim(ClaimTypes.Role, user.Role.Name),
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+
         };
 
             if (guidClaim != null)
@@ -124,11 +120,9 @@ namespace VinWallet.Repository.Utils
                     throw new SecurityTokenException("Invalid refresh token");
                 }
                 var userId = principal.FindFirst("UserId")?.Value;
-
-                var username = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var role = principal.FindFirst(ClaimTypes.Role)?.Value;
 
-                if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(username) || string.IsNullOrEmpty(role) || !userId.ToString().Equals(refreshTokenRequest.UserId.ToString()))
+                if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(role) || !userId.ToString().Equals(refreshTokenRequest.UserId.ToString()))
                 {
                     throw new SecurityTokenException("Invalid refresh token data");
                 }
@@ -136,7 +130,6 @@ namespace VinWallet.Repository.Utils
                 var user = new User
                 {
                     Id = refreshTokenRequest.UserId,
-                    Username = username,
                     Role = new Role { Name = role }
                 };
                 Tuple<string, Guid> guidClaim = new Tuple<string, Guid>("UserId", user.Id);

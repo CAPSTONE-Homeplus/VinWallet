@@ -4,10 +4,10 @@ public class VinWalletHub : Hub
 {
     public override async Task OnConnectedAsync()
     {
-        var userId = Context.GetHttpContext().Request.Query["userId"].ToString();
-        if (!string.IsNullOrEmpty(userId))
+        var houseId = Context.GetHttpContext().Request.Query["houseId"].ToString();
+        if (!string.IsNullOrEmpty(houseId))
         {
-            await Groups.AddToGroupAsync(Context.ConnectionId, userId);
+            await Groups.AddToGroupAsync(Context.ConnectionId, houseId);
         }
 
         await base.OnConnectedAsync();
@@ -15,12 +15,11 @@ public class VinWalletHub : Hub
 
     public override async Task OnDisconnectedAsync(Exception exception)
     {
-        var userId = Context.GetHttpContext().Request.Query["userId"].ToString();
-        if (!string.IsNullOrEmpty(userId))
+        var houseId = Context.GetHttpContext().Request.Query["houseId"].ToString();
+        if (!string.IsNullOrEmpty(houseId))
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, userId);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, houseId);
         }
-
         await base.OnDisconnectedAsync(exception);
     }
 }

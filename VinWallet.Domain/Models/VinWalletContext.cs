@@ -36,7 +36,6 @@ public partial class VinWalletContext : DbContext
     public virtual DbSet<WalletHistory> WalletHistories { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
         => optionsBuilder.UseSqlServer("server =54.251.108.33; database = VinWallet;uid=admin_passio;pwd=vA+Q!N3pZdJyXuerBx9bCF;TrustServerCertificate=true");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

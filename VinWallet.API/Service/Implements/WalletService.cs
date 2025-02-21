@@ -6,7 +6,6 @@ using VinWallet.Domain.Paginate;
 using VinWallet.Repository.Constants;
 using VinWallet.Repository.Enums;
 using VinWallet.Repository.Generic.Interfaces;
-using VinWallet.Repository.Payload.Request.UserRequest;
 using VinWallet.Repository.Payload.Request.WalletRequest;
 using VinWallet.Repository.Payload.Response.WalletResponse;
 
