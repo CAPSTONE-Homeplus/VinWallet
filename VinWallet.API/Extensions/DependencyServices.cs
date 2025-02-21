@@ -20,6 +20,9 @@ using VinWallet.Domain.Models;
 using VinWallet.Repository.Generic.Implements;
 using VinWallet.Repository.Generic.Interfaces;
 using VinWallet.API.Service;
+using VinWallet.API.Service.RabbitMQ;
+using Microsoft.AspNetCore.Connections;
+using RabbitMQ.Client;
 
 namespace VinWallet.API.Extensions;
 
@@ -49,6 +52,17 @@ public static class DependencyServices
         services.AddScoped<IWalletService, WalletService>();
         services.AddScoped<ITransactionService, TransactionService>();
         services.AddScoped<ISignalRHubService, SignalRHubService>();
+
+        RabbitMQ.Client.IConnectionFactory connectionFactory = new ConnectionFactory()
+        {
+            HostName = configuration["RabbitMQ:HostName"],
+            UserName = configuration["RabbitMQ:UserName"],
+            Password = configuration["RabbitMQ:Password"],
+            Port = int.Parse(configuration["RabbitMQ:Port"])
+        };
+        RabbitMQService rabbitMQService = new RabbitMQService(connectionFactory, configuration["RabbitMQ:Exchange"]);
+
+        services.AddSingleton(rabbitMQService);
 
         services.AddHangfire(x => x.UseSqlServerStorage(configuration.GetConnectionString("HangfireConnection")));
         services.AddHangfireServer();
