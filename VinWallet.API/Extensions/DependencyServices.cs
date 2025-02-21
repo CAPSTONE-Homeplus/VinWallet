@@ -52,6 +52,7 @@ public static class DependencyServices
         services.AddScoped<IWalletService, WalletService>();
         services.AddScoped<ITransactionService, TransactionService>();
         services.AddScoped<ISignalRHubService, SignalRHubService>();
+        services.AddScoped<IPaymentMethodService, PaymentMethodService>();
 
         RabbitMQ.Client.IConnectionFactory connectionFactory = new ConnectionFactory()
         {

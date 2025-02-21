@@ -32,6 +32,7 @@ namespace VinWallet.Repository.Constants
             public const string CreateWalletFailed = "Tạo ví thất bại";
             public const string EmptyAmount = "Số tiền không được để trống";
             public const string MinAmount = "Số tiền nạp tối thiểu là 10,000 VND";
+            public const string NotEnoughBalance = "Số dư không đủ";
         }
 
         public static class TransactionMessage
@@ -46,6 +47,18 @@ namespace VinWallet.Repository.Constants
         {
             public const string RoomNotFound = "Không tìm thấy phòng";
             public const string RoomCodeAlreadyExists = "Mã phòng đã tồn tại";
+        }
+
+        public static class BuildingMessage
+        {
+            public const string BuildingNotFound = "Không tìm thấy tòa nhà";
+            public const string BuildingCodeAlreadyExists = "Mã tòa nhà đã tồn tại";
+        }
+        public static class HouseMessage
+        {
+            public const string HouseNotFound = "Không tìm thấy nhà";
+            public const string HouseCodeAlreadyExists = "Mã nhà đã tồn tại";
+            public const string HouseNotInBuilding = "Nhà không nằm trong tòa";
         }
 
         public static class Order
