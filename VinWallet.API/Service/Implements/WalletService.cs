@@ -87,7 +87,7 @@ namespace VinWallet.API.Service.Implements
             return true;
         }
 
-        public async Task CreateAndConnectWalletToUser(Guid userId, Role role, Guid roomId)
+        public async Task CreateAndConnectWalletToUser(Guid userId, Role role, Guid houseId)
         {
             var newUser = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(userId),
                 include: x => x.Include(x => x.Role));
@@ -107,7 +107,7 @@ namespace VinWallet.API.Service.Implements
 
                 var walletRequestLeader = new CreateWalletRequest
                 {
-                    Name = WalletEnum.WalletType.Shared.ToString() + roomId.ToString(),
+                    Name = WalletEnum.WalletType.Shared.ToString() + houseId.ToString(),
                     Type = WalletEnum.WalletType.Shared.ToString(),
                     OwnerId = newUser.Id
                 };
@@ -117,7 +117,7 @@ namespace VinWallet.API.Service.Implements
             }
             else
             {
-                var leader = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.RoomId.Equals(roomId) && x.Role.Name.Equals(UserEnum.Role.Leader.ToString()),
+                var leader = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.HouseId.Equals(houseId) && x.Role.Name.Equals(UserEnum.Role.Leader.ToString()),
                    include: x => x.Include(x => x.Role));
                 var sharedWallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate: x => x.OwnerId.Equals(leader.Id) &&
                 x.Type.Equals(WalletEnum.WalletType.Shared.ToString()));

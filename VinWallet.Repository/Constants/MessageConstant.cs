@@ -48,6 +48,18 @@ namespace VinWallet.Repository.Constants
             public const string RoomCodeAlreadyExists = "Mã phòng đã tồn tại";
         }
 
+        public static class BuildingMessage
+        {
+            public const string BuildingNotFound = "Không tìm thấy tòa nhà";
+            public const string BuildingCodeAlreadyExists = "Mã tòa nhà đã tồn tại";
+        }
+        public static class HouseMessage
+        {
+            public const string HouseNotFound = "Không tìm thấy nhà";
+            public const string HouseCodeAlreadyExists = "Mã nhà đã tồn tại";
+            public const string HouseNotInBuilding = "Nhà không nằm trong tòa";
+        }
+
         public static class Order
         {
             public const string EmptyOrderId = "OrderId bị trống";

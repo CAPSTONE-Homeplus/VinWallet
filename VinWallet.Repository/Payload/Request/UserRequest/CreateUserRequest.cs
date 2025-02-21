@@ -19,6 +19,9 @@ namespace VinWallet.Repository.Payload.Request.UserRequest
         public string? Password { get; set; }
 
         [Required(ErrorMessage = "RoomCode is required")]
-        public string? RoomCode { get; set; }
+        public string? BuildingCode { get; set; }
+
+        [Required(ErrorMessage = "HouseId is required")]
+        public string? HouseCode { get; set; }
     }
 }

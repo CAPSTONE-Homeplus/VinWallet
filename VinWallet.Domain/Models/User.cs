@@ -21,9 +21,9 @@ public partial class User
 
     public string? Password { get; set; }
 
-    public Guid? RoomId { get; set; }
-
     public Guid? RoleId { get; set; }
+
+    public Guid? HouseId { get; set; }
 
     public virtual Role? Role { get; set; }
 

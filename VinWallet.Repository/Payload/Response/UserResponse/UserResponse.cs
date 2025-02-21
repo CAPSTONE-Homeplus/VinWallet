@@ -14,7 +14,7 @@ namespace VinWallet.Repository.Payload.Response.UserResponse
 
         public string? Status { get; set; }
 
-        public Guid? RoomId { get; set; }
+        public Guid? HouseId { get; set; }
 
         public string? ExtraField { get; set; }
 
