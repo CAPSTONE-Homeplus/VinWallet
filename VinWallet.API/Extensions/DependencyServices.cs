@@ -54,16 +54,16 @@ public static class DependencyServices
         services.AddScoped<ISignalRHubService, SignalRHubService>();
         services.AddScoped<IPaymentMethodService, PaymentMethodService>();
 
-        RabbitMQ.Client.IConnectionFactory connectionFactory = new ConnectionFactory()
-        {
-            HostName = configuration["RabbitMQ:HostName"],
-            UserName = configuration["RabbitMQ:UserName"],
-            Password = configuration["RabbitMQ:Password"],
-            Port = int.Parse(configuration["RabbitMQ:Port"])
-        };
-        RabbitMQService rabbitMQService = new RabbitMQService(connectionFactory, configuration["RabbitMQ:Exchange"]);
+        //RabbitMQ.Client.IConnectionFactory connectionFactory = new ConnectionFactory()
+        //{
+        //    HostName = configuration["RabbitMQ:HostName"],
+        //    UserName = configuration["RabbitMQ:UserName"],
+        //    Password = configuration["RabbitMQ:Password"],
+        //    Port = int.Parse(configuration["RabbitMQ:Port"])
+        //};
+        //RabbitMQPublisher rabbitMQService = new RabbitMQPublisher(connectionFactory, configuration["RabbitMQ:Exchange"]);
 
-        services.AddSingleton(rabbitMQService);
+        //services.AddSingleton(rabbitMQService);
 
         services.AddHangfire(x => x.UseSqlServerStorage(configuration.GetConnectionString("HangfireConnection")));
         services.AddHangfireServer();
