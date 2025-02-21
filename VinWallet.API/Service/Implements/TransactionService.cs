@@ -64,108 +64,10 @@ namespace VinWallet.API.Service.Implements
 
         public async Task<TransactionResponse> CreateTransaction(CreateTransactionRequest createTransactionRequest)
         {
-            //if (!createTransactionRequest.UserId.ToString().Equals(GetUserIdFromJwt())) throw new BadHttpRequestException(MessageConstant.UserMessage.NotAllowAction);
-            //var transaction = _mapper.Map<Transaction>(createTransactionRequest);
-            //if (createTransactionRequest.OrderId != null)
-            //{
-            //    var token = GetJwtToken();
-            //    var apiResponse = await CallApiUtils.CallApiEndpoint(HomeCleanApiEndPointConstant.Order.OrderEndpoint.Replace("{id}", createTransactionRequest.OrderId.ToString()), token);
-            //    var order = await CallApiUtils.GenerateObjectFromResponse<OrderResponse>(apiResponse);
-            //    if (order.Id == null || order.Id == Guid.Empty) throw new BadHttpRequestException(MessageConstant.Order.OrderNotFound);
-            //    transaction.Id = Guid.NewGuid();
-
-            //    var paymentMethod = await _unitOfWork.GetRepository<PaymentMethod>().SingleOrDefaultAsync(predicate: x => x.Name.Equals(PaymenMethodEnum.PaymentMethodEnum.Wallet.ToString()));
-            //    transaction.PaymentMethodId = paymentMethod.Id;
-            //    transaction.Amount = order.TotalAmount.ToString();
-            //    transaction.TransactionDate = DateTime.UtcNow.AddHours(7);
-            //    transaction.CreatedAt = DateTime.UtcNow.AddHours(7);
-            //    transaction.UpdatedAt = DateTime.UtcNow.AddHours(7);
-            //    transaction.Code = order.Code;
-            //    transaction.Status = TransactionEnum.TransactionStatus.Pending.ToString();
-
-            //    var category = await _unitOfWork.GetRepository<Category>().SingleOrDefaultAsync(predicate: x => x.Name.Equals(TransactionCategoryEnum.TransactionCategory.Spending.ToString()));
-            //    transaction.CategoryId = category.Id;
-
-            //    var userWallet = await _unitOfWork.GetRepository<UserWallet>()
-            //        .SingleOrDefaultAsync(predicate: x => x.UserId.Equals(createTransactionRequest.UserId) && x.WalletId.Equals(createTransactionRequest.WalletId),
-            //                      include: x => x.Include(x => x.Wallet));
-
-            //    if (userWallet == null) throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
-
-            //    var wallet = userWallet.Wallet;
-            //    if (await _unitOfWork.CommitAsync() <= 0)
-            //    {
-            //        transaction.Status = TransactionEnum.TransactionStatus.Failed.ToString();
-            //        throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
-            //    };
-            //    transaction.Status = TransactionEnum.TransactionStatus.Success.ToString();
-            //    await _unitOfWork.GetRepository<Transaction>().InsertAsync(transaction);
-            //    if (await _unitOfWork.CommitAsync() <= 0) throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
-            //    if (wallet.Type.Equals(WalletEnum.WalletType.Shared.ToString()))
-            //    {
-            //        var leaderId = wallet.OwnerId.ToString();
-            //        var message = $"User {createTransactionRequest.UserId} has made a transaction of {order.TotalAmount} from Shared Wallet.";
-            //        _backgroundJobClient.Enqueue(() => _signalRHubService.SendNotificationToUser(leaderId, message));
-            //    }
-            //}
-            //else
-            //{
-            //    transaction.Id = Guid.NewGuid();
-            //    transaction.TransactionDate = DateTime.UtcNow.AddHours(7);
-            //    transaction.CreatedAt = DateTime.UtcNow.AddHours(7);
-            //    transaction.UpdatedAt = DateTime.UtcNow.AddHours(7);
-            //    transaction.Status = TransactionEnum.TransactionStatus.Pending.ToString();
-            //    transaction.Code = DateTime.Now.Ticks.ToString();
-            //    var paymentMethod = await _unitOfWork.GetRepository<PaymentMethod>().SingleOrDefaultAsync(predicate: x => x.Name.Equals(PaymenMethodEnum.PaymentMethodEnum.Wallet.ToString()));
-            //    transaction.PaymentMethodId = paymentMethod.Id;
-            //    var category = await _unitOfWork.GetRepository<Category>().SingleOrDefaultAsync(predicate: x => x.Name.Equals(TransactionCategoryEnum.TransactionCategory.Deposit.ToString()));
-            //    transaction.CategoryId = category.Id;
-            //    transaction.Amount = createTransactionRequest.Amount;
-            //    transaction.Type = TransactionEnum.TransactionType.Deposit.ToString();
-
-            //    await _unitOfWork.GetRepository<Transaction>().InsertAsync(transaction);
-            //    if (await _unitOfWork.CommitAsync() <= 0) throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
-            //}
-            //return _mapper.Map<TransactionResponse>(transaction);
-
-            //if (!createTransactionRequest.UserId.ToString().Equals(GetUserIdFromJwt()))
-            //    throw new BadHttpRequestException(MessageConstant.UserMessage.NotAllowAction);
-            //var userWallet = await ValidateAndGetUserWallet(createTransactionRequest.UserId, createTransactionRequest.WalletId);
-
-            //var transaction = await InitializeBaseTransaction(createTransactionRequest);
-            //try
-            //{
-            //    if (createTransactionRequest.OrderId != null)
-            //    {
-            //        await HandleOrderTransaction(transaction, createTransactionRequest, userWallet.Wallet);
-            //    }
-            //    else
-            //    {    
-            //        await HandleDepositTransaction(transaction, createTransactionRequest);
-            //    }
-            //    await SaveTransaction(transaction);
-
-            //    await HandleSharedWalletNotification(transaction, userWallet.Wallet);
-
-            //    return _mapper.Map<TransactionResponse>(transaction);
-            //}
-            //catch (Exception ex)
-            //{
-            //    transaction.Status = TransactionEnum.TransactionStatus.Failed.ToString();
-            //    await _unitOfWork.CommitAsync();
-            //    throw;
-            //}
-
-            try 
-            {
                 var transaction = await PreHandle(createTransactionRequest);
+                if (transaction == null)
+                    throw new BadHttpRequestException(MessageConstant.TransactionMessage.CreateTransactionFailed);
                 return _mapper.Map<TransactionResponse>(transaction);
-            }
-            catch (Exception ex)
-            {
-                
-            }
-            return null;
 
         }
 
@@ -238,10 +140,8 @@ namespace VinWallet.API.Service.Implements
                     predicate: x => x.UserId.Equals(userId) && x.WalletId.Equals(walletId),
                     include: x => x.Include(x => x.Wallet)
                 );
-
             if (userWallet == null)
                 throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
-
             return userWallet;
         }
 
@@ -256,7 +156,6 @@ namespace VinWallet.API.Service.Implements
         }
         private async Task HandleOrderTransaction(Transaction transaction, CreateTransactionRequest request)
         {
-            
             var order = await GetOrderDetails(request.OrderId.Value);
             transaction.Amount = order.TotalAmount.ToString();
             transaction.Code = order.Code;
@@ -299,8 +198,6 @@ namespace VinWallet.API.Service.Implements
             transaction.Status = status.ToString();
             return _mapper.Map<TransactionResponse>(transaction);
         }
-
-
         private async Task<TransactionResponse> ProcessVNPayPayment(CreateTransactionRequest request, Transaction transaction)
         {
             try
@@ -321,24 +218,16 @@ namespace VinWallet.API.Service.Implements
                 throw;
             }
         }
-
         private async Task UpdateTransactionPaymentUrl(Transaction transaction, string paymentUrl)
         {
-            //var transaction = await _unitOfWork.GetRepository<Transaction>()
-            //    .SingleOrDefaultAsync(predicate: x => x.Id.Equals(transactionId));
-
             if (transaction != null)
             {
-
                 transaction.PaymentUrl = paymentUrl;
                 transaction.UpdatedAt = DateTime.UtcNow.AddHours(7);
                 _unitOfWork.GetRepository<Transaction>().UpdateAsync(transaction);
                 await _unitOfWork.CommitAsync();
             }
         }
-
-
-
         public async Task<bool> UpdateTransactionStatus(Transaction transaction, TransactionEnum.TransactionStatus transactionStatus)
         {
             transaction.Status = transactionStatus.ToString();

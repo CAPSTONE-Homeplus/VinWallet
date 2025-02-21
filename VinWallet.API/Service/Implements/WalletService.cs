@@ -138,7 +138,8 @@ namespace VinWallet.API.Service.Implements
             }
             else
             {
-                wallet.Balance -= decimal.Parse(amount);    
+                wallet.Balance -= decimal.Parse(amount);
+                if (wallet.Balance < 0) throw new BadHttpRequestException(MessageConstant.WalletMessage.NotEnoughBalance);
             }
             wallet.UpdatedAt = DateTime.UtcNow.AddHours(7);
             _unitOfWork.GetRepository<Wallet>().UpdateAsync(wallet);
