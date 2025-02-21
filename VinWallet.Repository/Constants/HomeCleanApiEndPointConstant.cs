@@ -25,6 +25,21 @@ namespace VinWallet.Repository.Constants
 
         }
 
+        public static class Building
+        {
+            public const string BuildingsEndpoint = ApiEndpoint + "/buildings";
+            public const string BuildingEndpoint = BuildingsEndpoint + "/{id}";
+
+            public const string BuildingByCodeEndpoint = BuildingsEndpoint + "/by-code/{code}";
+        }
+
+        public static class House
+        {
+            public const string HousesEndpoint = ApiEndpoint + "/houses";
+            public const string HouseEndpoint = HousesEndpoint + "/{id}";
+            public const string HouseByCodeEndpoint = HousesEndpoint + "/by-code/{code}";
+        }
+
         public static class Order
         {
             public const string OrdersEndpoint = ApiEndpoint + "/orders";

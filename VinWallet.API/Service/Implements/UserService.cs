@@ -9,6 +9,8 @@ using VinWallet.Repository.Enums;
 using VinWallet.Repository.Generic.Interfaces;
 using VinWallet.Repository.Payload.Request.UserRequest;
 using VinWallet.Repository.Payload.Request.WalletRequest;
+using VinWallet.Repository.Payload.Response.BuildingResponse;
+using VinWallet.Repository.Payload.Response.HouseResponse;
 using VinWallet.Repository.Payload.Response.RoomResponse;
 using VinWallet.Repository.Payload.Response.UserResponse;
 using VinWallet.Repository.Utils;
@@ -33,17 +35,28 @@ namespace VinWallet.API.Service.Implements
             var existUser = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.Username.Equals(createUserRequest.Username));
             if (existUser != null) throw new BadHttpRequestException(MessageConstant.UserMessage.UsernameAlreadyExists);
 
-            var url = HomeCleanApiEndPointConstant.Room.RoomByCodeEndpoint.Replace("{room-code}", createUserRequest.RoomCode);
-            var apiResponse = await CallApiUtils.CallApiEndpoint(url, null);
-            var room = await CallApiUtils.GenerateObjectFromResponse<RoomResponse>(apiResponse);
-            if (room == null) throw new BadHttpRequestException(MessageConstant.RoomMessage.RoomNotFound);
+            var urlBuilding = HomeCleanApiEndPointConstant.Building.BuildingByCodeEndpoint.Replace("{code}", createUserRequest.BuildingCode);
+            var urlHouse = HomeCleanApiEndPointConstant.House.HouseByCodeEndpoint.Replace("{code}", createUserRequest.HouseCode);
+
+            var buildingResponse = await CallApiUtils.CallApiEndpoint(urlBuilding, null);
+            var houseResponse = await CallApiUtils.CallApiEndpoint(urlHouse, null);
+
+            var buiding = await CallApiUtils.GenerateObjectFromResponse<BuildingResponse>(buildingResponse);
+            if (buiding == null) throw new BadHttpRequestException(MessageConstant.BuildingMessage.BuildingNotFound);
+
+            var house = await CallApiUtils.GenerateObjectFromResponse<HouseResponse>(houseResponse);
+            if (house == null) throw new BadHttpRequestException(MessageConstant.HouseMessage.HouseNotFound);
+
+            if(!house.BuildingId.Equals(buiding.Id)) throw new BadHttpRequestException(MessageConstant.HouseMessage.HouseNotInBuilding);
+
+
             var newUser = _mapper.Map<User>(createUserRequest);
             newUser.Id = Guid.NewGuid();
             newUser.Password = PasswordUtil.HashPassword(createUserRequest.Password);
             newUser.Status = UserEnum.Status.Active.ToString();
-            newUser.RoomId = room.Id;
+            newUser.HouseId = house.Id;
 
-            var hasRoomLeader = await _unitOfWork.GetRepository<User>().AnyAsync(predicate: x => x.RoomId.Equals(room.Id));
+            var hasRoomLeader = await _unitOfWork.GetRepository<User>().AnyAsync(predicate: x => x.HouseId.Equals(house.Id));
 
             Role role;
             if (hasRoomLeader)
@@ -63,7 +76,7 @@ namespace VinWallet.API.Service.Implements
             await _unitOfWork.GetRepository<User>().InsertAsync(newUser);
             if (await _unitOfWork.CommitAsync() <= 0) throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
 
-            _backgroundJobClient.Enqueue(() => _walletService.CreateAndConnectWalletToUser(newUser.Id, role, room.Id));
+            _backgroundJobClient.Enqueue(() => _walletService.CreateAndConnectWalletToUser(newUser.Id, role, house.Id));
 
             var response = _mapper.Map<UserResponse>(newUser);
             response.Role = role.Name;
