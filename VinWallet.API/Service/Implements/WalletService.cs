@@ -123,8 +123,6 @@ namespace VinWallet.API.Service.Implements
                 x.Type.Equals(WalletEnum.WalletType.Shared.ToString()));
                 await ConnectWalletToUser(newUser.Id, sharedWallet.Id);
             }
-
-            
         }
 
         public async Task<bool> UpdateWalletBalance(Guid walletId, string amount, TransactionCategoryEnum.TransactionCategory transactionCategory)

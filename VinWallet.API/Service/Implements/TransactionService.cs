@@ -4,6 +4,7 @@ using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using VinWallet.API.Service.Interfaces;
 using VinWallet.Domain.Models;
+using VinWallet.Domain.Paginate;
 using VinWallet.Repository.Constants;
 using VinWallet.Repository.Enums;
 using VinWallet.Repository.Generic.Interfaces;
@@ -11,6 +12,7 @@ using VinWallet.Repository.Payload.Request.TransactionRequest;
 using VinWallet.Repository.Payload.Response.OrderResponse;
 using VinWallet.Repository.Payload.Response.TransactionResponse;
 using VinWallet.Repository.Utils;
+using static VinWallet.Repository.Constants.HomeCleanApiEndPointConstant;
 
 namespace VinWallet.API.Service.Implements
 {
@@ -236,5 +238,83 @@ namespace VinWallet.API.Service.Implements
             if (await _unitOfWork.CommitAsync() <= 0) return false;
             return true;
         }
+
+        public async Task<IPaginate<TransactionResponse>> GetTransactionByUserId(Guid userId, string? search, string? orderBy, int page, int size)
+        {
+            if (userId == Guid.Empty)
+                throw new BadHttpRequestException(MessageConstant.UserMessage.EmptyUserId);
+
+            if (!userId.ToString().Equals(GetUserIdFromJwt()))
+                throw new BadHttpRequestException(MessageConstant.UserMessage.NotAllowAction);
+
+            Func<IQueryable<Transaction>, IOrderedQueryable<Transaction>> orderByFunc = x => x.OrderByDescending(y => y.CreatedAt);
+
+            var transactions = await _unitOfWork.GetRepository<Transaction>().GetPagingListAsync(
+                selector: x => new TransactionResponse(
+                    x.Id,
+                    x.WalletId,
+                    x.UserId,
+                    x.PaymentMethodId,
+                    x.Amount,
+                    x.Type,
+                    x.PaymentUrl,
+                    x.Note,
+                    x.TransactionDate,
+                    x.Status,
+                    x.CreatedAt,
+                    x.UpdatedAt,
+                    x.Code,
+                    x.CategoryId,
+                    x.OrderId
+                ),
+                predicate: x => x.UserId == userId &&
+                                 (string.IsNullOrEmpty(search) || x.Code.Contains(search) || x.Type.Contains(search)),
+                orderBy: orderByFunc,
+                page: page,
+                size: size
+            );
+
+            return transactions;
+        }
+
+        public async Task<IPaginate<TransactionResponse>> GetTransactionByUserIdAndWalletId(Guid userId, Guid walletId, string? search, string? orderBy, int page, int size)
+        {
+            if (userId == Guid.Empty)
+                throw new BadHttpRequestException(MessageConstant.UserMessage.EmptyUserId);
+            if (walletId == Guid.Empty)
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
+
+            if (!userId.ToString().Equals(GetUserIdFromJwt()))
+                throw new BadHttpRequestException(MessageConstant.UserMessage.NotAllowAction);
+            Func<IQueryable<Transaction>, IOrderedQueryable<Transaction>> orderByFunc = x => x.OrderByDescending(y => y.CreatedAt);
+            var transactions = await _unitOfWork.GetRepository<Transaction>().GetPagingListAsync(
+                selector: x => new TransactionResponse(
+                    x.Id,
+                    x.WalletId,
+                    x.UserId,
+                    x.PaymentMethodId,
+                    x.Amount,
+                    x.Type,
+                    x.PaymentUrl,
+                    x.Note,
+                    x.TransactionDate,
+                    x.Status,
+                    x.CreatedAt,
+                    x.UpdatedAt,
+                    x.Code,
+                    x.CategoryId,
+                    x.OrderId
+                ),
+                predicate: x => x.UserId == userId && x.WalletId == walletId &&
+                                 (string.IsNullOrEmpty(search) || x.Code.Contains(search) || x.Type.Contains(search)),
+                orderBy: orderByFunc,
+                page: page,
+                size: size
+            );
+
+            return transactions;
+        }
+
+
     }
 }
