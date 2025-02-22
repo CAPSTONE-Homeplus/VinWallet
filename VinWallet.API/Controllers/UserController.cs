@@ -57,7 +57,7 @@ namespace VinWallet.API.Controllers
 
         [CustomAuthorize(UserEnum.Role.Leader, UserEnum.Role.Member)]
         [HttpGet(ApiEndPointConstant.User.TransactionsOfUserEndpoint)]
-        [ProducesResponseType(typeof(IPaginate<TransactionResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(IPaginate<GetTransactionResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetTransactionByUserId(Guid id, [FromQuery] string? search, [FromQuery] string? orderBy, [FromQuery] int page = 1, [FromQuery] int size = 10)
         {
             var response = await _transactionService.GetTransactionByUserId(id, search, orderBy, page, size);
@@ -66,7 +66,7 @@ namespace VinWallet.API.Controllers
 
         [CustomAuthorize(UserEnum.Role.Leader, UserEnum.Role.Member)]
         [HttpGet(ApiEndPointConstant.User.TransactionsOfUserEndpointByWalletId)]
-        [ProducesResponseType(typeof(IPaginate<TransactionResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(IPaginate<GetTransactionResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetTransactionByUserIdAndWalletId(Guid id, Guid walletId, [FromQuery] string? search, [FromQuery] string? orderBy, [FromQuery] int page = 1, [FromQuery] int size = 10)
         {
             var response = await _transactionService.GetTransactionByUserIdAndWalletId(id, walletId, search, orderBy, page, size);
