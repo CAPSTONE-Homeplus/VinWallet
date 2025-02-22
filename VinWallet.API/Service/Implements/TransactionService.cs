@@ -239,7 +239,7 @@ namespace VinWallet.API.Service.Implements
             return true;
         }
 
-        public async Task<IPaginate<TransactionResponse>> GetTransactionByUserId(Guid userId, string? search, string? orderBy, int page, int size)
+        public async Task<IPaginate<GetTransactionResponse>> GetTransactionByUserId(Guid userId, string? search, string? orderBy, int page, int size)
         {
             if (userId == Guid.Empty)
                 throw new BadHttpRequestException(MessageConstant.UserMessage.EmptyUserId);
@@ -250,7 +250,7 @@ namespace VinWallet.API.Service.Implements
             Func<IQueryable<Transaction>, IOrderedQueryable<Transaction>> orderByFunc = x => x.OrderByDescending(y => y.CreatedAt);
 
             var transactions = await _unitOfWork.GetRepository<Transaction>().GetPagingListAsync(
-                selector: x => new TransactionResponse(
+                selector: x => new GetTransactionResponse(
                     x.Id,
                     x.WalletId,
                     x.UserId,
@@ -277,7 +277,7 @@ namespace VinWallet.API.Service.Implements
             return transactions;
         }
 
-        public async Task<IPaginate<TransactionResponse>> GetTransactionByUserIdAndWalletId(Guid userId, Guid walletId, string? search, string? orderBy, int page, int size)
+        public async Task<IPaginate<GetTransactionResponse>> GetTransactionByUserIdAndWalletId(Guid userId, Guid walletId, string? search, string? orderBy, int page, int size)
         {
             if (userId == Guid.Empty)
                 throw new BadHttpRequestException(MessageConstant.UserMessage.EmptyUserId);
@@ -288,7 +288,7 @@ namespace VinWallet.API.Service.Implements
                 throw new BadHttpRequestException(MessageConstant.UserMessage.NotAllowAction);
             Func<IQueryable<Transaction>, IOrderedQueryable<Transaction>> orderByFunc = x => x.OrderByDescending(y => y.CreatedAt);
             var transactions = await _unitOfWork.GetRepository<Transaction>().GetPagingListAsync(
-                selector: x => new TransactionResponse(
+                selector: x => new GetTransactionResponse(
                     x.Id,
                     x.WalletId,
                     x.UserId,

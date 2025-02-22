@@ -13,7 +13,7 @@ namespace VinWallet.API.Service.Interfaces
 
         Task<bool> UpdateTransactionStatus(Transaction transaction, TransactionEnum.TransactionStatus transactionStatus);
 
-        Task<IPaginate<TransactionResponse>> GetTransactionByUserId(Guid userId, string? search, string? orderBy, int page, int size);
-        Task<IPaginate<TransactionResponse>> GetTransactionByUserIdAndWalletId(Guid userId, Guid walletId, string? search, string? orderBy, int page, int size);
+        Task<IPaginate<GetTransactionResponse>> GetTransactionByUserId(Guid userId, string? search, string? orderBy, int page, int size);
+        Task<IPaginate<GetTransactionResponse>> GetTransactionByUserIdAndWalletId(Guid userId, Guid walletId, string? search, string? orderBy, int page, int size);
     }
 }
