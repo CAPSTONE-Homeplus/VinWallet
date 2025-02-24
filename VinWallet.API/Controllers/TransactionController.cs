@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using VinWallet.API.Service.Interfaces;
 using VinWallet.API.Validators;
+using VinWallet.Domain.Paginate;
 using VinWallet.Repository.Constants;
 using VinWallet.Repository.Enums;
 using VinWallet.Repository.Payload.Request.TransactionRequest;

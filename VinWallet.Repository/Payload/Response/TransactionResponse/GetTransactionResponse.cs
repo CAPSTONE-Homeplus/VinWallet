@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace VinWallet.Repository.Payload.Response.TransactionResponse
 {
-    public class TransactionResponse
+    public class GetTransactionResponse
     {
         public Guid Id { get; set; }
 
@@ -38,23 +38,23 @@ namespace VinWallet.Repository.Payload.Response.TransactionResponse
 
         public Guid? OrderId { get; set; }
 
-        //public TransactionResponse(Guid guid, Guid? walletId, Guid? userId, Guid? paymentMethodId, string? amount, string? type, string? paymentUrl, string? note, DateTime? transactionDate, string? status, DateTime? createdAt, DateTime? updatedAt, string? code, Guid? categoryId, Guid? orderId)
-        //{
-        //    Id = guid;
-        //    WalletId = walletId;
-        //    UserId = userId;
-        //    PaymentMethodId = paymentMethodId;
-        //    Amount = amount;
-        //    Type = type;
-        //    PaymentUrl = paymentUrl;
-        //    Note = note;
-        //    TransactionDate = transactionDate;
-        //    Status = status;
-        //    CreatedAt = createdAt;
-        //    UpdatedAt = updatedAt;
-        //    Code = code;
-        //    CategoryId = categoryId;
-        //    OrderId = orderId;
-        //}
+        public GetTransactionResponse(Guid guid, Guid? walletId, Guid? userId, Guid? paymentMethodId, string? amount, string? type, string? paymentUrl, string? note, DateTime? transactionDate, string? status, DateTime? createdAt, DateTime? updatedAt, string? code, Guid? categoryId, Guid? orderId)
+        {
+            Id = guid;
+            WalletId = walletId;
+            UserId = userId;
+            PaymentMethodId = paymentMethodId;
+            Amount = amount;
+            Type = type;
+            PaymentUrl = paymentUrl;
+            Note = note;
+            TransactionDate = transactionDate;
+            Status = status;
+            CreatedAt = createdAt;
+            UpdatedAt = updatedAt;
+            Code = code;
+            CategoryId = categoryId;
+            OrderId = orderId;
+        }
     }
 }
