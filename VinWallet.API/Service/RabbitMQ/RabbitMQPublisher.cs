@@ -45,7 +45,7 @@ namespace VinWallet.API.Service.RabbitMQ
             };
 
             await _channel.BasicPublishAsync(_exchange, routingKey, false, props, body);
-            Console.WriteLine($"[RabbitMQ] Sent to {queueName}: {jsonMessage}");
+            Console.WriteLine($"[RabbitMQ] Sent to queuename: {queueName}" + " routingkey: " + routingKey);
         }
 
         public void Dispose()

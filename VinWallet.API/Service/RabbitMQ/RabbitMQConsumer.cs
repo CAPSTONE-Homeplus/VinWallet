@@ -50,6 +50,7 @@ namespace HomeClean.API.Service.Implements.RabbitMQ
                 var body = ea.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
                 Console.WriteLine($"[RabbitMQ] Received from {queueName}: {message}");
+                await _channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
 
                 await Task.Yield();
             };
