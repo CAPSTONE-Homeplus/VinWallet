@@ -136,6 +136,8 @@ public static class DependencyServices
                 ValidateIssuer = true,
                 ValidateAudience = false,
                 ValidateIssuerSigningKey = true,
+                ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero,
                 IssuerSigningKey =
                     new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes("SuperStrongSecretKeyForJwtToken123!")),
