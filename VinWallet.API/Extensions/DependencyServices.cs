@@ -64,7 +64,8 @@ public static class DependencyServices
                 HostName = options.HostName,
                 Port = options.Port,
                 UserName = options.UserName,
-                Password = options.Password
+                Password = options.Password,
+                VirtualHost = options.VirtualHost
             };
         });
 
