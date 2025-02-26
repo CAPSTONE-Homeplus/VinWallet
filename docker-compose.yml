@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - app_network
+
+  vinwallet-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vinwallet-api
+    restart: always
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    depends_on:
+      - rabbitmq
+    ports:
+      - "8080:8080"
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge

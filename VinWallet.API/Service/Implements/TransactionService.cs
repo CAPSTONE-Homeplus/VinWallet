@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
 using Azure.Core;
 using Hangfire;
+using HomeClean.API.Service.Implements.RabbitMQ;
 using Microsoft.EntityFrameworkCore;
 using VinWallet.API.Service.Interfaces;
+using VinWallet.API.Service.RabbitMQ;
 using VinWallet.Domain.Models;
 using VinWallet.Domain.Paginate;
 using VinWallet.Repository.Constants;
@@ -22,13 +24,14 @@ namespace VinWallet.API.Service.Implements
         private readonly IBackgroundJobClient _backgroundJobClient;
         private readonly IWalletService _walletService;
         private readonly IVNPayService _vNPayService;
-
-        public TransactionService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<TransactionService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISignalRHubService signalRHubService, IBackgroundJobClient backgroundJobClient, IWalletService walletService, IVNPayService vNPayService) : base(unitOfWork, logger, mapper, httpContextAccessor)
+        private readonly RabbitMQPublisher _rabbitMQPublisher;
+        public TransactionService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<TransactionService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISignalRHubService signalRHubService, IBackgroundJobClient backgroundJobClient, RabbitMQPublisher rabbitMQPublisher, IWalletService walletService, IVNPayService vNPayService) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
             _signalRHubService = signalRHubService;
             _backgroundJobClient = backgroundJobClient;
             _walletService = walletService;
             _vNPayService = vNPayService;
+            _rabbitMQPublisher = rabbitMQPublisher;
         }
 
 
@@ -91,6 +94,9 @@ namespace VinWallet.API.Service.Implements
                     await HandleDepositTransaction(transaction, createTransactionRequest);
                 }
                 await SaveTransaction(transaction);
+
+
+                _rabbitMQPublisher.Publish("OrderQueue", "payment_success", transaction.OrderId , false);
 
                 await HandleSharedWalletNotification(transaction, userWallet.Wallet);
 
