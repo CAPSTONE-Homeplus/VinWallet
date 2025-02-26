@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore.Storage.Internal;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -33,6 +34,7 @@ namespace VinWallet.Repository.Constants
             public const string EmptyAmount = "Số tiền không được để trống";
             public const string MinAmount = "Số tiền nạp tối thiểu là 10,000 VND";
             public const string NotEnoughBalance = "Số dư không đủ";
+            public const string InviteMemberFailed = "Mời thành viên vào ví thất bại";
         }
 
         public static class TransactionMessage

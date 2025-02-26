@@ -23,6 +23,8 @@ using VinWallet.API.Service;
 using VinWallet.API.Service.RabbitMQ;
 using Microsoft.AspNetCore.Connections;
 using RabbitMQ.Client;
+using Microsoft.AspNetCore.SignalR;
+using VinWallet.API.Hubs;
 using HomeClean.API.Service.Implements.RabbitMQ;
 
 namespace VinWallet.API.Extensions;
@@ -86,6 +88,7 @@ public static class DependencyServices
             x.Address = new Uri("https://localhost:7106");
             //x.Address = new Uri("https://homeclean.onrender.com");
         });
+        services.AddSingleton<IUserIdProvider, UserProvider>();
 
         return services;
     }

@@ -3,6 +3,7 @@ using VinWallet.API.Service.Interfaces;
 using VinWallet.API.Validators;
 using VinWallet.Repository.Constants;
 using VinWallet.Repository.Enums;
+using VinWallet.Repository.Payload.Request.WalletRequest;
 using VinWallet.Repository.Payload.Response.WalletResponse;
 
 namespace VinWallet.API.Controllers
@@ -23,6 +24,20 @@ namespace VinWallet.API.Controllers
         {
             var response = await _walletService.GetWalletById(id);
             return Ok(response);
+        }
+
+
+        [CustomAuthorize(UserEnum.Role.Member)]
+        [HttpPost(ApiEndPointConstant.Wallet.InviteMemberEndpoint)]
+        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        public async Task<IActionResult> InviteMemberToWallet([FromBody] ConnectWalletToUserRequest request)
+        {
+            var response = await _walletService.ConnectWalletToUser(request.UserId, request.WalletId);
+            if (!response)
+            {
+                return Problem($"{MessageConstant.WalletMessage.InviteMemberFailed}: {request.UserId}");
+            }
+            return CreatedAtAction(nameof(InviteMemberToWallet), response);
         }
     }
 }

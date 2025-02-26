@@ -28,12 +28,16 @@ namespace VinWallet.Repository.Constants
             public const string UsersEndpoint = ApiEndpoint + "/users";
             public const string UserEndpoint = UsersEndpoint + "/{id}";
             public const string WalletsOfUserEndpoint = UserEndpoint + "/wallets";
+            public const string TransactionsOfUserEndpoint = UserEndpoint + "/transactions";
+            public const string TransactionsOfUserEndpointByWalletId = UserEndpoint + "/transactions/{walletId}";
+            public const string CreateShareWallet = UserEndpoint + "/share-wallet";
         }
 
         public static class Wallet
         {
             public const string WalletsEndpoint = ApiEndpoint + "/wallets";
             public const string WalletEndpoint = WalletsEndpoint + "/{id}";
+            public const string InviteMemberEndpoint = WalletsEndpoint + "/invite-member";
         }
 
         public static class Transaction
