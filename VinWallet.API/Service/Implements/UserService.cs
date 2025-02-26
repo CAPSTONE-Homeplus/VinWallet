@@ -58,17 +58,17 @@ namespace VinWallet.API.Service.Implements
 
             var hasRoomLeader = await _unitOfWork.GetRepository<User>().AnyAsync(predicate: x => x.HouseId.Equals(house.Id));
 
-            Role role;
-            if (hasRoomLeader)
-            {
-                role = await _unitOfWork.GetRepository<Role>().SingleOrDefaultAsync(predicate: x => x.Name.Equals(UserEnum.Role.Member.ToString()));
-                newUser.RoleId = role.Id;
-            }
-            else
-            {
-                role = await _unitOfWork.GetRepository<Role>().SingleOrDefaultAsync(predicate: x => x.Name.Equals(UserEnum.Role.Leader.ToString()));
-                newUser.RoleId = role.Id;
-            }
+
+            //if (hasRoomLeader)
+            //{
+            Role role = await _unitOfWork.GetRepository<Role>().SingleOrDefaultAsync(predicate: x => x.Name.Equals(UserEnum.Role.Member.ToString()));
+              newUser.RoleId = role.Id;
+            //}
+            //else
+            //{
+            //    role = await _unitOfWork.GetRepository<Role>().SingleOrDefaultAsync(predicate: x => x.Name.Equals(UserEnum.Role.Leader.ToString()));
+            //    newUser.RoleId = role.Id;
+            //}
 
             newUser.CreatedAt = DateTime.UtcNow.AddHours(7);
             newUser.UpdatedAt = DateTime.UtcNow.AddHours(7);
@@ -76,12 +76,14 @@ namespace VinWallet.API.Service.Implements
             await _unitOfWork.GetRepository<User>().InsertAsync(newUser);
             if (await _unitOfWork.CommitAsync() <= 0) throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
 
-            _backgroundJobClient.Enqueue(() => _walletService.CreateAndConnectWalletToUser(newUser.Id, role, house.Id));
+            _backgroundJobClient.Enqueue(() => _walletService.CreatePersionalWallet(newUser.Id));
 
             var response = _mapper.Map<UserResponse>(newUser);
             response.Role = role.Name;
             return response;
         }
+
+        
 
         public async Task<UserResponse> GetUserById(Guid id)
         {

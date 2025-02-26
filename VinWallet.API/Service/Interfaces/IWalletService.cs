@@ -16,7 +16,9 @@ namespace VinWallet.API.Service.Interfaces
 
         Task<bool> ConnectWalletToUser(Guid? userId, Guid walletId);
 
-        Task CreateAndConnectWalletToUser(Guid userId, Role role, Guid roomId);
+        Task CreatePersionalWallet(Guid userId);
+
+        Task<WalletResponse> CreateShareWallet(Guid userId);
 
         Task<bool> UpdateWalletBalance(Guid walletId, string amount, TransactionCategoryEnum.TransactionCategory transactionCategory);
     }
