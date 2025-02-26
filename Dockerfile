@@ -1,5 +1,4 @@
-#See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
+# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 USER app
 WORKDIR /app
@@ -24,4 +23,11 @@ RUN dotnet publish "./VinWallet.API.csproj" -c $BUILD_CONFIGURATION -o /app/publ
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+# RabbitMQ Configuration
+COPY rabbitmq.conf /etc/rabbitmq/
+ENV RABBITMQ_NODENAME=rabbit@localhost
+RUN chown rabbitmq:rabbitmq /etc/rabbitmq/rabbitmq.conf
+# Note: User change may need to be handled differently in a multi-service container
+
 ENTRYPOINT ["dotnet", "VinWallet.API.dll"]
