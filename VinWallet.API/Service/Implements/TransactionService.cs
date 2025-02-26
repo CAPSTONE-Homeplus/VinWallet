@@ -233,6 +233,7 @@ namespace VinWallet.API.Service.Implements
                 transaction.PaymentUrl = paymentUrl;
                 transaction.UpdatedAt = DateTime.UtcNow.AddHours(7);
                 _unitOfWork.GetRepository<Transaction>().UpdateAsync(transaction);
+
                 await _unitOfWork.CommitAsync();
             }
         }
