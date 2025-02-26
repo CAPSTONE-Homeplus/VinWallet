@@ -35,15 +35,15 @@ namespace VinWallet.API.Service.Implements
 
         public async Task<WalletResponse> GetWalletById(Guid id)
         {
-            if(id == Guid.Empty) throw new BadHttpRequestException(MessageConstant.WalletMessage.EmptyWalletId);
-            var wallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate : x => x.Id.Equals(id));
-            if(wallet != null && wallet.OwnerId.ToString() != GetUserIdFromJwt()) throw new BadHttpRequestException(MessageConstant.UserMessage.NotAllowAction, StatusCodes.Status403Forbidden);
+            if (id == Guid.Empty) throw new BadHttpRequestException(MessageConstant.WalletMessage.EmptyWalletId);
+            var wallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(id));
+            if (wallet != null && wallet.OwnerId.ToString() != GetUserIdFromJwt()) throw new BadHttpRequestException(MessageConstant.UserMessage.NotAllowAction, StatusCodes.Status403Forbidden);
             return _mapper.Map<WalletResponse>(wallet);
         }
 
         public async Task<IPaginate<WalletResponse>> GetWalletsOfUser(Guid id, int page, int size)
         {
-            if(id == Guid.Empty) throw new BadHttpRequestException(MessageConstant.UserMessage.EmptyUserId);
+            if (id == Guid.Empty) throw new BadHttpRequestException(MessageConstant.UserMessage.EmptyUserId);
             var userid = GetUserIdFromJwt();
             if (id.ToString() != GetUserIdFromJwt()) throw new BadHttpRequestException(MessageConstant.UserMessage.NotAllowAction, StatusCodes.Status403Forbidden);
             var wallets = await _unitOfWork.GetRepository<UserWallet>()
@@ -127,7 +127,7 @@ namespace VinWallet.API.Service.Implements
 
         public async Task<bool> UpdateWalletBalance(Guid walletId, string amount, TransactionCategoryEnum.TransactionCategory transactionCategory)
         {
-            if(walletId == Guid.Empty) throw new BadHttpRequestException(MessageConstant.WalletMessage.EmptyWalletId);
+            if (walletId == Guid.Empty) throw new BadHttpRequestException(MessageConstant.WalletMessage.EmptyWalletId);
             var wallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(walletId));
             if (wallet == null) throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
             if (transactionCategory == TransactionCategoryEnum.TransactionCategory.Deposit)
@@ -149,16 +149,19 @@ namespace VinWallet.API.Service.Implements
         {
             var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(userId));
 
-                var walletRequestLeader = new CreateWalletRequest
-                {
-                    Name = WalletEnum.WalletType.Shared.ToString() + user.HouseId.ToString(),
-                    Type = WalletEnum.WalletType.Shared.ToString(),
-                    OwnerId = userId
-                };
-                var walletLeader = await CreateWallet(walletRequestLeader);
-                await ConnectWalletToUser(userId, walletLeader.Id);
+            var hasShareWallet = await _unitOfWork.GetRepository<UserWallet>().AnyAsync(predicate: x => x.UserId.Equals(userId) && x.Wallet.Type.Equals(WalletEnum.WalletType.Shared.ToString()));
+            if (hasShareWallet) throw new BadHttpRequestException(MessageConstant.WalletMessage.UserHasSharedWallet);
+
+            var walletRequestLeader = new CreateWalletRequest
+            {
+                Name = WalletEnum.WalletType.Shared.ToString() + user.HouseId.ToString(),
+                Type = WalletEnum.WalletType.Shared.ToString(),
+                OwnerId = userId
+            };
+            var walletLeader = await CreateWallet(walletRequestLeader);
+            await ConnectWalletToUser(userId, walletLeader.Id);
             return _mapper.Map<WalletResponse>(walletLeader);
-            
+
             //else
             //{
             //    var leader = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.HouseId.Equals(houseId) && x.Role.Name.Equals(UserEnum.Role.Leader.ToString()),
