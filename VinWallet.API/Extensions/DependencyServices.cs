@@ -23,6 +23,8 @@ using VinWallet.API.Service;
 using VinWallet.API.Service.RabbitMQ;
 using Microsoft.AspNetCore.Connections;
 using RabbitMQ.Client;
+using Microsoft.AspNetCore.SignalR;
+using VinWallet.API.Hubs;
 using HomeClean.API.Service.Implements.RabbitMQ;
 
 namespace VinWallet.API.Extensions;
@@ -55,21 +57,21 @@ public static class DependencyServices
         services.AddScoped<ISignalRHubService, SignalRHubService>();
         services.AddScoped<IPaymentMethodService, PaymentMethodService>();
 
-        services.Configure<RabbitMQOptions>(configuration.GetSection("RabbitMQ"));
-        services.AddSingleton<RabbitMQ.Client.IConnectionFactory>(sp =>
-        {
-            var options = sp.GetRequiredService<IOptions<RabbitMQOptions>>().Value;
-            return new ConnectionFactory
-            {
-                HostName = options.HostName,
-                Port = options.Port,
-                UserName = options.UserName,
-                Password = options.Password
-            };
-        });
+        //services.Configure<RabbitMQOptions>(configuration.GetSection("RabbitMQ"));
+        //services.AddSingleton<RabbitMQ.Client.IConnectionFactory>(sp =>
+        //{
+        //    var options = sp.GetRequiredService<IOptions<RabbitMQOptions>>().Value;
+        //    return new ConnectionFactory
+        //    {
+        //        HostName = options.HostName,
+        //        Port = options.Port,
+        //        UserName = options.UserName,
+        //        Password = options.Password
+        //    };
+        //});
 
-        services.AddSingleton<RabbitMQPublisher>();
-        services.AddHostedService<RabbitMQConsumer>();
+        //services.AddSingleton<RabbitMQPublisher>();
+        //services.AddHostedService<RabbitMQConsumer>();
 
         services.AddHangfire(x => x.UseSqlServerStorage(configuration.GetConnectionString("HangfireConnection")));
         services.AddHangfireServer();
@@ -85,6 +87,7 @@ public static class DependencyServices
             x.Address = new Uri("https://localhost:7106");
             //x.Address = new Uri("https://homeclean.onrender.com");
         });
+        services.AddSingleton<IUserIdProvider, UserProvider>();
 
         return services;
     }

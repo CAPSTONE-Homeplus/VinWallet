@@ -73,6 +73,14 @@ namespace VinWallet.API.Controllers
             return Ok(response);
         }
 
+        [HttpGet(ApiEndPointConstant.User.CreateShareWallet)]
+        [ProducesResponseType(typeof(WalletResponse), StatusCodes.Status200OK)]
+        public async Task<IActionResult> CreateShareWallet([FromRoute] Guid id)
+        {
+            var response = await _walletService.CreateShareWallet(id);
+            return Ok(response);
+        }
+
 
     }
 }
