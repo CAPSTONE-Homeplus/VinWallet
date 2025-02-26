@@ -26,15 +26,26 @@ namespace VinWallet.API.Service.RabbitMQ
             _channel.ExchangeDeclareAsync(_exchange, ExchangeType.Topic, durable: true);
         }
 
-        public async void Publish(string queueName, object message)
+        public async void Publish(string queueName, string eventType, object message, bool isBroadcast = false)
         {
-            if (!_queues.ContainsKey(queueName))
+            string routingKey;
+
+            if (isBroadcast)
             {
-                Console.WriteLine($"[RabbitMQ] Queue {queueName} not found in configuration.");
-                return;
+                routingKey = $"broadcast.{eventType}";
+            }
+            else
+            {
+                if (!_queues.ContainsKey(queueName))
+                {
+                    Console.WriteLine($"[RabbitMQ] Queue {queueName} not found in configuration.");
+                    return;
+                }
+
+                queueName = _queues[queueName];
+                routingKey = $"{queueName}.{eventType}";
             }
 
-            string routingKey = $"{queueName}.event";
             string jsonMessage = JsonSerializer.Serialize(message);
             byte[] body = Encoding.UTF8.GetBytes(jsonMessage);
 
@@ -45,8 +56,10 @@ namespace VinWallet.API.Service.RabbitMQ
             };
 
             await _channel.BasicPublishAsync(_exchange, routingKey, false, props, body);
-            Console.WriteLine($"[RabbitMQ] Sent to queuename: {queueName}" + " routingkey: " + routingKey);
+            Console.WriteLine($"[RabbitMQ] Sent to routingKey: {routingKey}");
         }
+
+
 
         public void Dispose()
         {

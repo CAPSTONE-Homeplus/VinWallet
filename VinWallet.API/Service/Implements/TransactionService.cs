@@ -92,12 +92,9 @@ namespace VinWallet.API.Service.Implements
                     await HandleDepositTransaction(transaction, createTransactionRequest);
                 }
                 await SaveTransaction(transaction);
-                var EventMessage = new EventMessage
-                {
-                    EventType = "payment.success",
-                    Data = transaction.OrderId.ToString()
-                };
-                _rabbitMQPublisher.Publish("OrderQueue", EventMessage);
+
+
+                _rabbitMQPublisher.Publish("OrderQueue", "payment_success", transaction.OrderId , false);
 
                 await HandleSharedWalletNotification(transaction, userWallet.Wallet);
 
