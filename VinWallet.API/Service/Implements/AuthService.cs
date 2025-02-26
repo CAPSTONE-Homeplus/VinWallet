@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using VinWallet.API.Service.Interfaces;
+using VinWallet.API.Service.RabbitMQ;
 using VinWallet.Domain.Models;
 using VinWallet.Repository.Constants;
 using VinWallet.Repository.Generic.Interfaces;
@@ -43,7 +44,6 @@ namespace VinWallet.API.Service.Implements
             var token = JwtUtil.GenerateJwtToken(user, guidClaim);
             loginResponse.AccessToken = token.AccessToken;
             loginResponse.RefreshToken = token.RefreshToken;
-            _backgroundJobClient.Enqueue(() => _signalRHubService.SendNotificationToAll("Tuan Anh test SinalR to All"));
             return loginResponse;
         }
 

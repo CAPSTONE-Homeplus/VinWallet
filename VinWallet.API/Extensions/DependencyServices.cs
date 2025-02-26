@@ -25,6 +25,7 @@ using Microsoft.AspNetCore.Connections;
 using RabbitMQ.Client;
 using Microsoft.AspNetCore.SignalR;
 using VinWallet.API.Hubs;
+using HomeClean.API.Service.Implements.RabbitMQ;
 
 namespace VinWallet.API.Extensions;
 
@@ -56,16 +57,21 @@ public static class DependencyServices
         services.AddScoped<ISignalRHubService, SignalRHubService>();
         services.AddScoped<IPaymentMethodService, PaymentMethodService>();
 
-        //RabbitMQ.Client.IConnectionFactory connectionFactory = new ConnectionFactory()
-        //{
-        //    HostName = configuration["RabbitMQ:HostName"],
-        //    UserName = configuration["RabbitMQ:UserName"],
-        //    Password = configuration["RabbitMQ:Password"],
-        //    Port = int.Parse(configuration["RabbitMQ:Port"])
-        //};
-        //RabbitMQPublisher rabbitMQService = new RabbitMQPublisher(connectionFactory, configuration["RabbitMQ:Exchange"]);
+        services.Configure<RabbitMQOptions>(configuration.GetSection("RabbitMQ"));
+        services.AddSingleton<RabbitMQ.Client.IConnectionFactory>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<RabbitMQOptions>>().Value;
+            return new ConnectionFactory
+            {
+                HostName = options.HostName,
+                Port = options.Port,
+                UserName = options.UserName,
+                Password = options.Password
+            };
+        });
 
-        //services.AddSingleton(rabbitMQService);
+        services.AddSingleton<RabbitMQPublisher>();
+        services.AddHostedService<RabbitMQConsumer>();
 
         services.AddHangfire(x => x.UseSqlServerStorage(configuration.GetConnectionString("HangfireConnection")));
         services.AddHangfireServer();
