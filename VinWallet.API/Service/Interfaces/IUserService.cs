@@ -1,4 +1,5 @@
-﻿using VinWallet.Repository.Payload.Request.UserRequest;
+﻿using VinWallet.Domain.Paginate;
+using VinWallet.Repository.Payload.Request.UserRequest;
 using VinWallet.Repository.Payload.Response.UserResponse;
 
 namespace VinWallet.API.Service.Interfaces
@@ -8,6 +9,10 @@ namespace VinWallet.API.Service.Interfaces
         public Task<UserResponse> CreateUser(CreateUserRequest createUserRequest);
 
         public Task<UserResponse> GetUserById(Guid id);
+        public Task<UserResponse> GetUserByPhoneNumber(string phoneNumber);
+
+        public Task<IPaginate<UserResponse>> GetAllUserByShareWalletId(Guid shareWalletId, int page, int limit);
+
 
     }
 }

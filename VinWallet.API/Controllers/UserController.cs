@@ -81,6 +81,12 @@ namespace VinWallet.API.Controllers
             return Ok(response);
         }
 
-
+        [HttpGet(ApiEndPointConstant.User.GetUserByPhoneNumber)]
+        [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetUserByPhoneNumber([FromRoute] string phoneNumber)
+        {
+            var response = await _userService.GetUserByPhoneNumber(phoneNumber);
+            return Ok(response);
+        }
     }
 }
