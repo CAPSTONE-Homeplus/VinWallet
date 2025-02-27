@@ -171,5 +171,14 @@ namespace VinWallet.API.Service.Implements
             //    await ConnectWalletToUser(newUser.Id, sharedWallet.Id);
             //}
         }
+
+        public async Task<bool> DeleteUserWallet(Guid userId, Guid walletId)
+        {
+            var userWallet = await _unitOfWork.GetRepository<UserWallet>().SingleOrDefaultAsync(predicate: x => x.UserId.Equals(userId) && x.WalletId.Equals(walletId));
+            if (userWallet == null) throw new BadHttpRequestException(MessageConstant.WalletMessage.UserNotInWallet);
+            _unitOfWork.GetRepository<UserWallet>().DeleteAsync(userWallet);
+            if (await _unitOfWork.CommitAsync() <= 0) return false;
+            return true;
+        }
     }
 }

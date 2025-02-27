@@ -51,5 +51,17 @@ namespace VinWallet.API.Controllers
             var response = await _userService.GetAllUserByShareWalletId(id, page, size);
             return Ok(response);
         }
+
+        [HttpDelete(ApiEndPointConstant.Wallet.DeleteUserWallet)]
+        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        public async Task<IActionResult> DeleteUserWallet([FromRoute] Guid userId, [FromRoute] Guid id)
+        {
+            var response = await _walletService.DeleteUserWallet(userId, id);
+            if (!response)
+            {
+                return Problem($"{MessageConstant.WalletMessage.DeleteUserWalletFailed}: {userId}");
+            }
+            return Ok(response);
+        }
     }
 }
