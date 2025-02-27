@@ -25,6 +25,10 @@ public partial class User
 
     public Guid? HouseId { get; set; }
 
+    public string? Email { get; set; }
+
+    public string? PhoneNumber { get; set; }
+
     public virtual Role? Role { get; set; }
 
     public virtual ICollection<UserWallet> UserWallets { get; set; } = new List<UserWallet>();

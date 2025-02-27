@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using RoomProto;
 using VinWallet.API.Service.Interfaces;
 using VinWallet.Domain.Models;
+using VinWallet.Domain.Paginate;
 using VinWallet.Repository.Constants;
 using VinWallet.Repository.Enums;
 using VinWallet.Repository.Generic.Interfaces;
@@ -47,7 +48,7 @@ namespace VinWallet.API.Service.Implements
             var house = await CallApiUtils.GenerateObjectFromResponse<HouseResponse>(houseResponse);
             if (house == null) throw new BadHttpRequestException(MessageConstant.HouseMessage.HouseNotFound);
 
-            if(!house.BuildingId.Equals(buiding.Id)) throw new BadHttpRequestException(MessageConstant.HouseMessage.HouseNotInBuilding);
+            if (!house.BuildingId.Equals(buiding.Id)) throw new BadHttpRequestException(MessageConstant.HouseMessage.HouseNotInBuilding);
 
 
             var newUser = _mapper.Map<User>(createUserRequest);
@@ -56,20 +57,9 @@ namespace VinWallet.API.Service.Implements
             newUser.Status = UserEnum.Status.Active.ToString();
             newUser.HouseId = house.Id;
 
-            var hasRoomLeader = await _unitOfWork.GetRepository<User>().AnyAsync(predicate: x => x.HouseId.Equals(house.Id));
 
-
-            //if (hasRoomLeader)
-            //{
             Role role = await _unitOfWork.GetRepository<Role>().SingleOrDefaultAsync(predicate: x => x.Name.Equals(UserEnum.Role.Member.ToString()));
-              newUser.RoleId = role.Id;
-            //}
-            //else
-            //{
-            //    role = await _unitOfWork.GetRepository<Role>().SingleOrDefaultAsync(predicate: x => x.Name.Equals(UserEnum.Role.Leader.ToString()));
-            //    newUser.RoleId = role.Id;
-            //}
-
+            newUser.RoleId = role.Id;
             newUser.CreatedAt = DateTime.UtcNow.AddHours(7);
             newUser.UpdatedAt = DateTime.UtcNow.AddHours(7);
 
@@ -83,7 +73,7 @@ namespace VinWallet.API.Service.Implements
             return response;
         }
 
-        
+
 
         public async Task<UserResponse> GetUserById(Guid id)
         {
@@ -93,6 +83,47 @@ namespace VinWallet.API.Service.Implements
             var response = _mapper.Map<UserResponse>(user);
             response.Role = user.Role.Name;
             return response;
+        }
+
+        public async Task<UserResponse> GetUserByPhoneNumber(string phoneNumber)
+        {
+            if (phoneNumber == null) throw new BadHttpRequestException(MessageConstant.UserMessage.EmptyPhoneNumber);
+            var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.PhoneNumber.Equals(phoneNumber),
+                               include: x => x.Include(x => x.Role));
+            if (user == null) throw new BadHttpRequestException(MessageConstant.UserMessage.UserNotFound);
+            var response = _mapper.Map<UserResponse>(user);
+            return response;
+        }
+
+        public async Task<IPaginate<UserResponse>> GetAllUserByShareWalletId(Guid shareWalletId, int page, int limit)
+        {
+            if (shareWalletId == Guid.Empty) throw new BadHttpRequestException(MessageConstant.WalletMessage.EmptyWalletId);
+            var shareWallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(shareWalletId));
+            if (shareWallet == null) throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
+            if (!shareWallet.Type.Equals(WalletEnum.WalletType.Shared.ToString())) throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotShare);
+
+            var users = await _unitOfWork.GetRepository<User>().GetPagingListAsync(selector: x => new UserResponse
+            {
+                Id = x.Id,
+                FullName = x.FullName,
+                Status = x.Status,
+                HouseId = x.HouseId,
+                ExtraField = x.ExtraField,
+                CreatedAt = x.CreatedAt,
+                UpdatedAt = x.UpdatedAt,
+                Username = x.Username,
+                Role = x.Role != null ? x.Role.Name : null,
+                Email = x.Email,
+                PhoneNumber = x.PhoneNumber
+            },
+    predicate: x => x.UserWallets.Any(uw => uw.WalletId == shareWalletId),
+    include: x => x.Include(x => x.UserWallets),
+    page: page,
+    size: limit
+);
+            return users;
+
+
         }
     }
 }

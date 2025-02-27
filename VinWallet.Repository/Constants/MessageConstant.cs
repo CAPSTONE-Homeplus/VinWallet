@@ -24,6 +24,7 @@ namespace VinWallet.Repository.Constants
             public const string UserActivated = "Người dùng đã được kích hoạt";
             public const string CreateUserFailed = "Tạo người dùng thất bại";
             public const string NotAllowAction = "Bạn không được truy cập phần thông tin này";
+            public const string EmptyPhoneNumber = "Số điện thoại không được để trống";
         }
 
         public static class WalletMessage
@@ -36,6 +37,7 @@ namespace VinWallet.Repository.Constants
             public const string NotEnoughBalance = "Số dư không đủ";
             public const string InviteMemberFailed = "Mời thành viên vào ví thất bại";
             public const string UserHasSharedWallet = "Người dùng đã có ví chung";
+            public const string WalletNotShare = "Ví không phải là ví chung";
         }
 
         public static class TransactionMessage
