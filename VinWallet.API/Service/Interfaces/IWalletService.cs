@@ -21,5 +21,7 @@ namespace VinWallet.API.Service.Interfaces
         Task<WalletResponse> CreateShareWallet(Guid userId);
 
         Task<bool> UpdateWalletBalance(Guid walletId, string amount, TransactionCategoryEnum.TransactionCategory transactionCategory);
+
+        Task<bool> DeleteUserWallet(Guid userId, Guid walletId);
     }
 }

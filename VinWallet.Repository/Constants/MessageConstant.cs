@@ -38,6 +38,8 @@ namespace VinWallet.Repository.Constants
             public const string InviteMemberFailed = "Mời thành viên vào ví thất bại";
             public const string UserHasSharedWallet = "Người dùng đã có ví chung";
             public const string WalletNotShare = "Ví không phải là ví chung";
+            public const string UserNotInWallet = "Người dùng không nằm trong ví";
+            public const string DeleteUserWalletFailed = "Xóa người dùng khỏi ví thất bại";
         }
 
         public static class TransactionMessage
