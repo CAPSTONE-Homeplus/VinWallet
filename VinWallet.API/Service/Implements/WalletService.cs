@@ -71,17 +71,32 @@ namespace VinWallet.API.Service.Implements
 
         public async Task<bool> ConnectWalletToUser(Guid? userId, Guid walletId)
         {
-            var userWallet = new UserWallet
-            {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                CreatedAt = DateTime.UtcNow.AddHours(7),
-                UpdatedAt = DateTime.UtcNow.AddHours(7),
-                Status = WalletEnum.UserWalletStatus.Joined.ToString(),
-                WalletId = walletId
-            };
+            var wallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(walletId));
+            if (wallet == null) throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
+            if (wallet.Type.Equals(WalletEnum.WalletType.Personal.ToString())) throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotShare);
+            var userIdFromJwt = GetUserIdFromJwt();
+            if(!wallet.OwnerId.ToString().Equals(userIdFromJwt)) throw new BadHttpRequestException(MessageConstant.WalletMessage.NotAllowAction);
 
-            await _unitOfWork.GetRepository<UserWallet>().InsertAsync(userWallet);
+            var userWallets = await _unitOfWork.GetRepository<UserWallet>().GetListAsync(predicate: x => x.UserId.Equals(userId));
+
+            if (userWallets.Count() < 2)
+            {
+                var userWallet = new UserWallet
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    CreatedAt = DateTime.UtcNow.AddHours(7),
+                    UpdatedAt = DateTime.UtcNow.AddHours(7),
+                    Status = WalletEnum.UserWalletStatus.Joined.ToString(),
+                    WalletId = walletId
+                };
+
+                await _unitOfWork.GetRepository<UserWallet>().InsertAsync(userWallet);
+            }
+            else
+            {
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.UserHasShareWallet);
+            }
             if (await _unitOfWork.CommitAsync() <= 0) throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
             return true;
         }
