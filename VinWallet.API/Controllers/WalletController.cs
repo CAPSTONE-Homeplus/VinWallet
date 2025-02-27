@@ -31,7 +31,7 @@ namespace VinWallet.API.Controllers
         }
 
 
-        [CustomAuthorize(UserEnum.Role.Member)]
+
         [HttpPost(ApiEndPointConstant.Wallet.InviteMemberEndpoint)]
         [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
         public async Task<IActionResult> InviteMemberToWallet([FromBody] ConnectWalletToUserRequest request)
