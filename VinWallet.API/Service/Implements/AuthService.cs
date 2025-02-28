@@ -27,12 +27,28 @@ namespace VinWallet.API.Service.Implements
 
         public async Task<LoginResponse> Login(LoginRequest loginRequest)
         {
-            Expression<Func<Domain.Models.User, bool>> searchFilter = p =>
-               p.Username.Equals(loginRequest.Username) &&
-               p.Password.Equals(PasswordUtil.HashPassword(loginRequest.Password));
+            // Kiểm tra nếu username có tồn tại trước
+            Expression<Func<Domain.Models.User, bool>> usernameFilter = p => p.Username.Equals(loginRequest.Username);
+            Domain.Models.User existingUser = await _unitOfWork.GetRepository<Domain.Models.User>().SingleOrDefaultAsync(predicate: usernameFilter);
 
-            Domain.Models.User user = await _unitOfWork.GetRepository<Domain.Models.User>().SingleOrDefaultAsync(predicate: searchFilter,include: x=> x.Include(x => x.Role));
-            if (user == null) throw new BadHttpRequestException(MessageConstant.LoginMessage.InvalidUsernameOrPassword);
+            if (existingUser == null)
+            {
+                throw new BadHttpRequestException(MessageConstant.LoginMessage.UserNotRegistered); 
+            }
+
+            // Kiểm tra username và password có đúng không
+            Expression<Func<Domain.Models.User, bool>> searchFilter = p =>
+                p.Username.Equals(loginRequest.Username) &&
+                p.Password.Equals(PasswordUtil.HashPassword(loginRequest.Password));
+
+            Domain.Models.User user = await _unitOfWork.GetRepository<Domain.Models.User>().SingleOrDefaultAsync(predicate: searchFilter, include: x => x.Include(x => x.Role));
+
+            if (user == null)
+            {
+                throw new BadHttpRequestException(MessageConstant.LoginMessage.InvalidUsernameOrPassword); 
+            }
+
+            // Nếu tài khoản và mật khẩu hợp lệ, tạo response
             LoginResponse loginResponse = new LoginResponse
             {
                 UserId = user.Id,
@@ -40,12 +56,15 @@ namespace VinWallet.API.Service.Implements
                 Role = user.Role.Name,
                 Status = user.Status,
             };
+
             Tuple<string, Guid> guidClaim = new Tuple<string, Guid>("UserId", user.Id);
             var token = JwtUtil.GenerateJwtToken(user, guidClaim);
             loginResponse.AccessToken = token.AccessToken;
             loginResponse.RefreshToken = token.RefreshToken;
+
             return loginResponse;
         }
+
 
         public async Task<LoginResponse> RefreshToken(RefreshTokenRequest refreshTokenRequest)
         {
