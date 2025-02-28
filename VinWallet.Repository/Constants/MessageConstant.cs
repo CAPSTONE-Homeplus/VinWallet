@@ -13,6 +13,7 @@ namespace VinWallet.Repository.Constants
         {
             public const string InvalidUsernameOrPassword = "Tên đăng nhập hoặc mật khẩu không chính xác";
             public const string InactivatedAccount = "Tài khoản đang bị vô hiệu hoá";
+            public const string UserNotRegistered = "Tài khoản chưa được đăng ký";
         }
 
         public static class UserMessage
