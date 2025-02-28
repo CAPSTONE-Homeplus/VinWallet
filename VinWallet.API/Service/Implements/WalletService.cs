@@ -101,6 +101,23 @@ namespace VinWallet.API.Service.Implements
             return true;
         }
 
+        public async Task<bool> ConnectWalletToUserForCreateUser(Guid? userId, Guid walletId)
+        {
+            var userWallet = new UserWallet
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow.AddHours(7),
+                UpdatedAt = DateTime.UtcNow.AddHours(7),
+                Status = WalletEnum.UserWalletStatus.Joined.ToString(),
+                WalletId = walletId
+            };
+
+            await _unitOfWork.GetRepository<UserWallet>().InsertAsync(userWallet);
+            if (await _unitOfWork.CommitAsync() <= 0) throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
+            return true;
+        }
+
         public async Task CreatePersionalWallet(Guid userId)
         {
             var newUser = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(userId),
@@ -114,7 +131,7 @@ namespace VinWallet.API.Service.Implements
             };
 
             var wallet = await CreateWallet(walletRequest);
-            await ConnectWalletToUser(newUser.Id, wallet.Id);
+            await ConnectWalletToUserForCreateUser(newUser.Id, wallet.Id);
 
             //if (role.Name.Equals(UserEnum.Role.Leader.ToString()))
             //{
