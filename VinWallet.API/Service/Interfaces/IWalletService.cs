@@ -23,5 +23,6 @@ namespace VinWallet.API.Service.Interfaces
         Task<bool> UpdateWalletBalance(Guid walletId, string amount, TransactionCategoryEnum.TransactionCategory transactionCategory);
 
         Task<bool> DeleteUserWallet(Guid userId, Guid walletId);
+        Task<WalletResponse> UpdateOwnerId(Guid walletId, Guid userId);
     }
 }

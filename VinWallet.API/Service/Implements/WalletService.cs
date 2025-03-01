@@ -212,5 +212,16 @@ namespace VinWallet.API.Service.Implements
             if (await _unitOfWork.CommitAsync() <= 0) return false;
             return true;
         }
+
+        public async Task<WalletResponse> UpdateOwnerId(Guid walletId, Guid userId)
+        {
+            var wallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(walletId));
+            if (wallet == null) throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
+            wallet.OwnerId = userId;
+            wallet.UpdatedAt = DateTime.UtcNow.AddHours(7);
+            _unitOfWork.GetRepository<Wallet>().UpdateAsync(wallet);
+            if (await _unitOfWork.CommitAsync() <= 0) throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
+            return _mapper.Map<WalletResponse>(wallet);
+        }
     }
 }
