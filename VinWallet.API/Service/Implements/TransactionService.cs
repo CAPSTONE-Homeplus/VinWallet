@@ -69,10 +69,10 @@ namespace VinWallet.API.Service.Implements
 
         public async Task<TransactionResponse> CreateTransaction(CreateTransactionRequest createTransactionRequest)
         {
-                var transaction = await PreHandle(createTransactionRequest);
-                if (transaction == null)
-                    throw new BadHttpRequestException(MessageConstant.TransactionMessage.CreateTransactionFailed);
-                return _mapper.Map<TransactionResponse>(transaction);
+            var transaction = await PreHandle(createTransactionRequest);
+            if (transaction == null)
+                throw new BadHttpRequestException(MessageConstant.TransactionMessage.CreateTransactionFailed);
+            return _mapper.Map<TransactionResponse>(transaction);
 
         }
 
@@ -209,7 +209,7 @@ namespace VinWallet.API.Service.Implements
         private async Task<TransactionResponse> ProcessVNPayPayment(CreateTransactionRequest request, Transaction transaction)
         {
             try
-            {               
+            {
                 var paymentUrl = _vNPayService.GeneratePaymentUrl(
                     request.Amount,
                     transaction.Id.ToString()
@@ -318,6 +318,47 @@ namespace VinWallet.API.Service.Implements
                 page: page,
                 size: size
             );
+
+            return transactions;
+        }
+
+        public async Task<IPaginate<GetTransactionResponse>> GetTransactionByWalletId(Guid walletId, string? search, string? orderBy, int page, int size)
+        {
+            if (walletId == Guid.Empty)
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
+
+            var wallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate: x => x.Id == walletId);
+            if (wallet == null)
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
+
+            //if (!wallet.OwnerId.ToString().Equals(GetUserIdFromJwt()))
+            //    throw new BadHttpRequestException(MessageConstant.UserMessage.NotAllowAction);
+
+            Func<IQueryable<Transaction>, IOrderedQueryable<Transaction>> orderByFunc = x => x.OrderByDescending(y => y.CreatedAt);
+            var transactions = await _unitOfWork.GetRepository<Transaction>().GetPagingListAsync(
+                               selector: x => new GetTransactionResponse(
+                                                      x.Id,
+                                                                         x.WalletId,
+                                                                                            x.UserId,
+                                                                                                               x.PaymentMethodId,
+                                                                                                                                  x.Amount,
+                                                                                                                                                     x.Type,
+                                                                                                                                                                        x.PaymentUrl,
+                                                                                                                                                                                           x.Note,
+                                                                                                                                                                                                              x.TransactionDate,
+                                                                                                                                                                                                                                 x.Status,
+                                                                                                                                                                                                                                                    x.CreatedAt,
+                                                                                                                                                                                                                                                                       x.UpdatedAt,
+                                                                                                                                                                                                                                                                                          x.Code,
+                                                                                                                                                                                                                                                                                                             x.CategoryId,
+                                                                                                                                                                                                                                                                                                                                x.OrderId
+                                                                                                                                                                                                                                                                                                                                               ),
+                                              predicate: x => x.WalletId == walletId &&
+                                                                              (string.IsNullOrEmpty(search) || x.Code.Contains(search) || x.Type.Contains(search)),
+                                                             orderBy: orderByFunc,
+                                                                            page: page,
+                                                                                           size: size
+                                                                                                      );
 
             return transactions;
         }

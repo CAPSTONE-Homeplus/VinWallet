@@ -5,6 +5,7 @@ using VinWallet.Domain.Paginate;
 using VinWallet.Repository.Constants;
 using VinWallet.Repository.Enums;
 using VinWallet.Repository.Payload.Request.WalletRequest;
+using VinWallet.Repository.Payload.Response.TransactionResponse;
 using VinWallet.Repository.Payload.Response.UserResponse;
 using VinWallet.Repository.Payload.Response.WalletResponse;
 
@@ -15,10 +16,12 @@ namespace VinWallet.API.Controllers
     {
         private readonly IWalletService _walletService;
         private readonly IUserService _userService;
-        public WalletController(ILogger<WalletController> logger, IWalletService walletService, IUserService userService) : base(logger)
+        private readonly ITransactionService _transactionService;
+        public WalletController(ILogger<WalletController> logger, IWalletService walletService, IUserService userService, ITransactionService transactionService) : base(logger)
         {
             _walletService = walletService;
             _userService = userService;
+            _transactionService = transactionService;
         }
 
         [CustomAuthorize(UserEnum.Role.Leader, UserEnum.Role.Member)]
@@ -61,6 +64,22 @@ namespace VinWallet.API.Controllers
             {
                 return Problem($"{MessageConstant.WalletMessage.DeleteUserWalletFailed}: {userId}");
             }
+            return Ok(response);
+        }
+
+        [HttpGet(ApiEndPointConstant.Wallet.GetTransactionByWalletId)]
+        [ProducesResponseType(typeof(IPaginate<GetTransactionResponse>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetTransactionByWalletId([FromRoute] Guid id, [FromQuery] string? search, [FromQuery] string? orderBy, [FromQuery] int page = 1, [FromQuery] int size = 10)
+        {
+            var response = await _transactionService.GetTransactionByWalletId(id, search, orderBy, page, size);
+            return Ok(response);
+        }
+
+        [HttpPatch(ApiEndPointConstant.Wallet.ChangeOwner)]
+        [ProducesResponseType(typeof(WalletResponse), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ChangeOwner([FromRoute] Guid id, [FromRoute] Guid userId)
+        {
+            var response = await _walletService.UpdateOwnerId(id, userId);
             return Ok(response);
         }
     }

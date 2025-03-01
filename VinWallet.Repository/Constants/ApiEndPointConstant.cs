@@ -41,6 +41,8 @@ namespace VinWallet.Repository.Constants
             public const string InviteMemberEndpoint = WalletsEndpoint + "/invite-member";
             public const string GetUserInSharedWallet = WalletsEndpoint + "/{id}/users-in-sharewallet";
             public const string DeleteUserWallet = WalletEndpoint + "/{userId}";
+            public const string GetTransactionByWalletId = WalletEndpoint + "/transactions";
+            public const string ChangeOwner = WalletEndpoint + "/change-owner/{userId}";
         }
 
         public static class Transaction
