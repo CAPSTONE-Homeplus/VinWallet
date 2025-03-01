@@ -26,6 +26,9 @@ namespace VinWallet.Repository.Constants
             public const string CreateUserFailed = "Tạo người dùng thất bại";
             public const string NotAllowAction = "Bạn không được truy cập phần thông tin này";
             public const string EmptyPhoneNumber = "Số điện thoại không được để trống";
+            public const string PhoneNumberAlreadyExists = "Số điện thoại đã tồn tại";
+            public const string EmptyEmail = "Email không được để trống";
+            public const string EmailAlreadyExists = "Email đã tồn tại";
         }
 
         public static class WalletMessage
