@@ -1,10 +1,8 @@
 ﻿using AutoMapper;
 using Hangfire;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using VinWallet.API.Service.Interfaces;
-using VinWallet.API.Service.RabbitMQ;
 using VinWallet.Domain.Models;
 using VinWallet.Repository.Constants;
 using VinWallet.Repository.Generic.Interfaces;

@@ -10,42 +10,24 @@ namespace VinWallet.API.Service.RabbitMQ
         private readonly IConnection _connection;
         private readonly IChannel _channel;
         private readonly string _exchange;
-        private readonly Dictionary<string, string> _queues;
+        private readonly string _queueName;
 
         public RabbitMQPublisher(IOptions<RabbitMQOptions> options, IConnectionFactory connectionFactory)
         {
-
             var config = options.Value;
 
             _connection = connectionFactory.CreateConnectionAsync().GetAwaiter().GetResult();
             _channel = _connection.CreateChannelAsync().GetAwaiter().GetResult();
 
             _exchange = config.Exchange;
-            _queues = config.Queues;
+            _queueName = config.QueueName;
 
             _channel.ExchangeDeclareAsync(_exchange, ExchangeType.Topic, durable: true);
         }
 
-        public async void Publish(string queueName, string eventType, object message, bool isBroadcast = false)
+        public async Task Publish(string eventType, object message)
         {
-            string routingKey;
-
-            if (isBroadcast)
-            {
-                routingKey = $"broadcast.{eventType}";
-            }
-            else
-            {
-                if (!_queues.ContainsKey(queueName))
-                {
-                    Console.WriteLine($"[RabbitMQ] Queue {queueName} not found in configuration.");
-                    return;
-                }
-
-                queueName = _queues[queueName];
-                routingKey = $"{queueName}.{eventType}";
-            }
-
+            string routingKey = $"{_queueName}.{eventType}";
             string jsonMessage = JsonSerializer.Serialize(message);
             byte[] body = Encoding.UTF8.GetBytes(jsonMessage);
 
@@ -59,13 +41,10 @@ namespace VinWallet.API.Service.RabbitMQ
             Console.WriteLine($"[RabbitMQ] Sent to routingKey: {routingKey}");
         }
 
-
-
         public void Dispose()
         {
             _channel?.CloseAsync();
             _connection?.CloseAsync();
         }
-
     }
 }

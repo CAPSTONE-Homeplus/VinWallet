@@ -9,6 +9,6 @@
         public string Exchange { get; set; }
 
         public string VirtualHost { get; set; }
-        public Dictionary<string, string> Queues { get; set; }
+        public string QueueName { get; set; }
     }
 }
