@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using VinWallet.API.Service.Interfaces;
+using VinWallet.API.Service.RabbitMQ;
+using VinWallet.API.Service.RabbitMQ.Message;
 using VinWallet.Domain.Models;
 using VinWallet.Domain.Paginate;
 using VinWallet.Repository.Constants;
@@ -13,10 +15,11 @@ namespace VinWallet.API.Service.Implements
 {
     public class WalletService : BaseService<WalletService>, IWalletService
     {
+        private readonly RabbitMQPublisher _rabbitMQPublisher;
 
-        public WalletService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<WalletService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor) : base(unitOfWork, logger, mapper, httpContextAccessor)
+        public WalletService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<WalletService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, RabbitMQPublisher rabbitMQPublisher) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
-
+            _rabbitMQPublisher = rabbitMQPublisher;
         }
 
         public async Task<WalletResponse> CreateWallet(CreateWalletRequest createWalletRequest)
@@ -97,7 +100,24 @@ namespace VinWallet.API.Service.Implements
             {
                 throw new BadHttpRequestException(MessageConstant.WalletMessage.UserHasShareWallet);
             }
-            if (await _unitOfWork.CommitAsync() <= 0) throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _rabbitMQPublisher.Publish("add_wallet_member", new InviteWalletMessage
+                    {
+                        WalletId = walletId,
+                        OwnerId = wallet.OwnerId,
+                        MemberId = userId
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ RabbitMQ publish failed: {ex.Message}");
+                }
+            });
+
             return true;
         }
 

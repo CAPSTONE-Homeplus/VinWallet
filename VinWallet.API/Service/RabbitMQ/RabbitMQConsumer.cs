@@ -3,7 +3,10 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
 using System.Text.Json;
+using VinWallet.API.Extensions;
+using VinWallet.API.Service.Interfaces;
 using VinWallet.API.Service.RabbitMQ;
+using VinWallet.API.Service.RabbitMQ.Message;
 
 namespace HomeClean.API.Service.Implements.RabbitMQ
 {
@@ -12,8 +15,9 @@ namespace HomeClean.API.Service.Implements.RabbitMQ
         private readonly IConnection _connection;
         private readonly IChannel _channel;
         private readonly string _queueName;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
 
-        public RabbitMQConsumer(IOptions<RabbitMQOptions> options, IConnectionFactory connectionFactory)
+        public RabbitMQConsumer(IOptions<RabbitMQOptions> options, IConnectionFactory connectionFactory, IServiceScopeFactory serviceScopeFactory)
         {
             var config = options.Value;
             _queueName = config.QueueName;
@@ -24,6 +28,7 @@ namespace HomeClean.API.Service.Implements.RabbitMQ
             _channel.ExchangeDeclareAsync(config.Exchange, ExchangeType.Topic, durable: true);
             _channel.QueueDeclareAsync(_queueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
             _channel.QueueBindAsync(_queueName, config.Exchange, "home_plus.#");
+            _serviceScopeFactory = serviceScopeFactory;
         }
 
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -40,11 +45,49 @@ namespace HomeClean.API.Service.Implements.RabbitMQ
                 var body = ea.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
                 Console.WriteLine($"[RabbitMQ] Received from {_queueName}: {message}");
+
+                try
+                {
+                    var routingKeyParts = ea.RoutingKey.Split('.');
+                    var eventType = routingKeyParts.Length > 1 ? routingKeyParts[1] : "";
+
+                    if (string.IsNullOrEmpty(eventType))
+                    {
+                        Console.WriteLine("[RabbitMQ] Invalid message format.");
+                        return;
+                    }
+
+                    switch (eventType)
+                    {
+                        case "payment_success":
+                            break;
+
+                        case "add_wallet_member":
+                            await HandleAddWalletMemberNotification(JsonSerializer.Deserialize<InviteWalletMessage>(message));
+                            break;
+
+                        default:
+                            Console.WriteLine($"[RabbitMQ] Unhandled event type: {eventType}");
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[RabbitMQ] Error processing message: {ex.Message}");
+                }
+
                 await _channel.BasicAckAsync(ea.DeliveryTag, multiple: false);
-                await Task.Yield();
             };
 
-            _channel.BasicConsumeAsync(queue: _queueName, autoAck: true, consumer: consumer);
+            _channel.BasicConsumeAsync(queue: _queueName, autoAck: false, consumer: consumer);
+        }
+
+        private async Task HandleAddWalletMemberNotification(InviteWalletMessage inviteWalletMessage)
+        {
+            await _serviceScopeFactory.ExecuteScopedAsync<ISignalRHubService>(async service =>
+            {
+                await service.SendNotificationToUser(inviteWalletMessage.MemberId.ToString(), "You have been invited to join a wallet.");
+            });
         }
     }
 }

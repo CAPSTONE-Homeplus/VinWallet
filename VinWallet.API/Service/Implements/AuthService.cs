@@ -1,8 +1,10 @@
 ﻿using AutoMapper;
 using Hangfire;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using VinWallet.API.Service.Interfaces;
+using VinWallet.API.Service.RabbitMQ;
 using VinWallet.Domain.Models;
 using VinWallet.Repository.Constants;
 using VinWallet.Repository.Generic.Interfaces;
@@ -16,11 +18,13 @@ namespace VinWallet.API.Service.Implements
     {
         private readonly ISignalRHubService _signalRHubService;
         private readonly IBackgroundJobClient _backgroundJobClient;
+        private readonly RabbitMQPublisher _rabbitMQPublisher;
 
-        public AuthService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<AuthService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISignalRHubService signalRHubService, IBackgroundJobClient backgroundJobClient) : base(unitOfWork, logger, mapper, httpContextAccessor)
+        public AuthService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<AuthService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISignalRHubService signalRHubService, IBackgroundJobClient backgroundJobClient, RabbitMQPublisher rabbitMQPublisher) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
             _signalRHubService = signalRHubService;
             _backgroundJobClient = backgroundJobClient;
+            _rabbitMQPublisher = rabbitMQPublisher;
         }
 
         public async Task<LoginResponse> Login(LoginRequest loginRequest)
@@ -60,6 +64,7 @@ namespace VinWallet.API.Service.Implements
             loginResponse.AccessToken = token.AccessToken;
             loginResponse.RefreshToken = token.RefreshToken;
 
+            await _rabbitMQPublisher.Publish("add_wallet_member", "Tuan Anh test RabbitMQ");
             return loginResponse;
         }
 

@@ -49,6 +49,7 @@ public static class DependencyServices
     {
 
         services.AddTransient<IBackgroundJobClient, BackgroundJobClient>();
+        services.AddSingleton<IUserIdProvider, UserProvider>();
 
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserService, UserService>();
@@ -56,6 +57,7 @@ public static class DependencyServices
         services.AddScoped<ITransactionService, TransactionService>();
         services.AddScoped<ISignalRHubService, SignalRHubService>();
         services.AddScoped<IPaymentMethodService, PaymentMethodService>();
+
 
         services.Configure<RabbitMQOptions>(configuration.GetSection("RabbitMQ"));
         services.AddSingleton<RabbitMQ.Client.IConnectionFactory>(sp =>
@@ -148,21 +150,35 @@ public static class DependencyServices
                 ValidateIssuerSigningKey = true,
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.Zero,
-                IssuerSigningKey =
-                    new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes("SuperStrongSecretKeyForJwtToken123!")),
-
-                NameClaimType = JwtRegisteredClaimNames.Sub,
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes("SuperStrongSecretKeyForJwtToken123!")
+                ),
+                NameClaimType = ClaimTypes.NameIdentifier,
                 RoleClaimType = ClaimTypes.Role,
-                
             };
+
             options.Events = new JwtBearerEvents
             {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    var path = context.HttpContext.Request.Path;
+
+                    if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chatHub"))
+                    {
+                        context.Token = accessToken;
+                    }
+                    return Task.CompletedTask;
+                },
                 OnAuthenticationFailed = context =>
                 {
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                     context.Response.ContentType = "application/json";
-                    var result = JsonSerializer.Serialize(new { code = StatusCodes.Status401Unauthorized, message = "Invalid token" });
+                    var result = JsonSerializer.Serialize(new
+                    {
+                        code = StatusCodes.Status401Unauthorized,
+                        message = "Invalid token"
+                    });
                     return context.Response.WriteAsync(result);
                 },
                 OnChallenge = context =>
@@ -173,7 +189,11 @@ public static class DependencyServices
                     {
                         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                         context.Response.ContentType = "application/json";
-                        var result = JsonSerializer.Serialize(new { code = StatusCodes.Status401Unauthorized, message = "You are not authorized" });
+                        var result = JsonSerializer.Serialize(new
+                        {
+                            code = StatusCodes.Status401Unauthorized,
+                            message = "You are not authorized"
+                        });
                         return context.Response.WriteAsync(result);
                     }
 
@@ -183,7 +203,11 @@ public static class DependencyServices
                 {
                     context.Response.StatusCode = StatusCodes.Status403Forbidden;
                     context.Response.ContentType = "application/json";
-                    var result = JsonSerializer.Serialize(new { code = StatusCodes.Status403Forbidden, message = "You do not have access to this resource" });
+                    var result = JsonSerializer.Serialize(new
+                    {
+                        code = StatusCodes.Status403Forbidden,
+                        message = "You do not have access to this resource"
+                    });
                     return context.Response.WriteAsync(result);
                 }
             };
