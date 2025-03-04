@@ -99,24 +99,7 @@ namespace VinWallet.API.Service.Implements
 
                     await UpdateTransactionStatus(transaction.Id, status);
 
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            await _rabbitMQPublisher.Publish("order_payment_successed", new OrderPaymentSuccessMessage
-                            {
-                               TransactionId = transaction.Id,
-                               WalletId = transaction.WalletId,
-                                Amount = transaction.Amount,
-                                Timestamp = transaction.CreatedAt,
-                                OrderId = transaction.OrderId
-                            });
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"❌ RabbitMQ publish failed: {ex.Message}");
-                        }
-                    });
+                   
 
                 }
                 else
