@@ -65,6 +65,9 @@ namespace HomeClean.API.Service.Implements.RabbitMQ
                         case "add_wallet_member":
                             await HandleAddWalletMemberNotification(JsonSerializer.Deserialize<InviteWalletMessage>(message));
                             break;
+                        case "order_payment_successed":
+                            await HandlePaymentSuccessNotification(JsonSerializer.Deserialize<OrderPaymentSuccessMessage>(message));
+                            break;
 
                         default:
                             Console.WriteLine($"[RabbitMQ] Unhandled event type: {eventType}");
@@ -87,6 +90,13 @@ namespace HomeClean.API.Service.Implements.RabbitMQ
             await _serviceScopeFactory.ExecuteScopedAsync<ISignalRHubService>(async service =>
             {
                 await service.SendNotificationToUser(inviteWalletMessage.MemberId.ToString(), "You have been invited to join a wallet.");
+            });
+        }
+        private async Task HandlePaymentSuccessNotification(OrderPaymentSuccessMessage orderPaymentSuccessMessage)
+        {
+            await _serviceScopeFactory.ExecuteScopedAsync<ISignalRHubService>(async service =>
+            {
+                await service.SendNotificationToUser(orderPaymentSuccessMessage.WalletId.ToString(), "Your payment has been successfully processed.");
             });
         }
     }

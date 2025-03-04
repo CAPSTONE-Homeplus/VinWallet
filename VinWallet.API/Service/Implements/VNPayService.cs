@@ -3,6 +3,8 @@ using Azure.Core;
 using System.Net;
 using System.Web;
 using VinWallet.API.Service.Interfaces;
+using VinWallet.API.Service.RabbitMQ.Message;
+using VinWallet.API.Service.RabbitMQ;
 using VinWallet.API.VnPay;
 using VinWallet.Domain.Models;
 using VinWallet.Repository.Constants;
@@ -10,6 +12,7 @@ using VinWallet.Repository.Enums;
 using VinWallet.Repository.Generic.Interfaces;
 using VinWallet.Repository.Payload.Response.VnPayDto;
 using VinWallet.Repository.Utils;
+using static VinWallet.Repository.Constants.ApiEndPointConstant;
 
 namespace VinWallet.API.Service.Implements
 {
@@ -17,14 +20,14 @@ namespace VinWallet.API.Service.Implements
     {
         private readonly VNPaySettings _vnPaySettings;
         private readonly IWalletService _walletService;
+        private readonly RabbitMQPublisher _rabbitMQPublisher;
 
 
-
-        public VNPayService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<VNPayService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, VNPaySettings vNPaySettings, IWalletService walletService) : base(unitOfWork, logger, mapper, httpContextAccessor)
+        public VNPayService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<VNPayService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, VNPaySettings vNPaySettings, IWalletService walletService, RabbitMQPublisher rabbitMQPublisher) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
             _vnPaySettings = vNPaySettings;
             _walletService = walletService;
-
+            _rabbitMQPublisher = rabbitMQPublisher;
         }
 
         public string GeneratePaymentUrl(string amount, string infor)
@@ -84,7 +87,7 @@ namespace VinWallet.API.Service.Implements
                                         _vnPaySettings.TmnCode == paymentData.VnpTmnCode &&
                                         paymentData.VnpResponseCode == "00";
 
-                var transaction = await _unitOfWork.GetRepository<Transaction>().SingleOrDefaultAsync(predicate: x => x.Id.ToString().Equals(paymentData.VnpOrderInfo));
+                var transaction = await _unitOfWork.GetRepository<VinWallet.Domain.Models.Transaction>().SingleOrDefaultAsync(predicate: x => x.Id.ToString().Equals(paymentData.VnpOrderInfo));
 
                 if (paymentData.IsSuccess && transaction != null)
                 {
@@ -95,6 +98,25 @@ namespace VinWallet.API.Service.Implements
                     TransactionEnum.TransactionStatus.Failed;
 
                     await UpdateTransactionStatus(transaction.Id, status);
+
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _rabbitMQPublisher.Publish("order_payment_successed", new OrderPaymentSuccessMessage
+                            {
+                               TransactionId = transaction.Id,
+                               WalletId = transaction.WalletId,
+                                Amount = transaction.Amount,
+                                Timestamp = transaction.CreatedAt,
+                                OrderId = transaction.OrderId
+                            });
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"❌ RabbitMQ publish failed: {ex.Message}");
+                        }
+                    });
 
                 }
                 else
@@ -113,11 +135,11 @@ namespace VinWallet.API.Service.Implements
         public async Task<bool> UpdateTransactionStatus(Guid id, TransactionEnum.TransactionStatus transactionStatus)
         {
             if (id == Guid.Empty) throw new BadHttpRequestException(MessageConstant.TransactionMessage.EmptyTransactionId);
-            var transaction = await _unitOfWork.GetRepository<Transaction>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(id));
+            var transaction = await _unitOfWork.GetRepository<VinWallet.Domain.Models.Transaction>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(id));
             if (transaction == null) throw new BadHttpRequestException(MessageConstant.TransactionMessage.TransactionNotFound);
             transaction.Status = transactionStatus.ToString();
             transaction.UpdatedAt = DateTime.UtcNow.AddHours(7);
-            _unitOfWork.GetRepository<Transaction>().UpdateAsync(transaction);
+            _unitOfWork.GetRepository<VinWallet.Domain.Models.Transaction>().UpdateAsync(transaction);
             if (await _unitOfWork.CommitAsync() <= 0) return false;
             return true;
         }
