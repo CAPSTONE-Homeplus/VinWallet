@@ -83,9 +83,13 @@ namespace HomeClean.API.Service.Implements.RabbitMQ
 
         private async Task HandleAddWalletMemberNotification(InviteWalletMessage inviteWalletMessage)
         {
+            var messageObject = new MessageObject<InviteWalletMessage>
+            {
+                Data = inviteWalletMessage
+            };
             await _serviceScopeFactory.ExecuteScopedAsync<ISignalRHubService>(async service =>
             {
-                await service.SendNotificationToUser(inviteWalletMessage.MemberId.ToString(), "You have been invited to join a wallet.");
+                await service.SendNotificationToUser(inviteWalletMessage.MemberId.ToString(), messageObject);
             });
         }
     }

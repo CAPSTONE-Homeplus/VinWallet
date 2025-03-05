@@ -20,17 +20,17 @@ namespace VinWallet.API.Service.Implements
         }
 
 
-        public async Task SendNotificationToAll(string message)
+        public async Task SendNotificationToAll(object message)
         {
             await _hubContext.Clients.All.SendAsync("ReceiveNotificationToAll", message);
         }
 
-        public async Task SendNotificationToGroup(string groupName, string message)
+        public async Task SendNotificationToGroup(string groupName, object message)
         {
             await _hubContext.Clients.Group(groupName).SendAsync("ReceiveNotificationToGroup", message);
         }
 
-        public async Task SendNotificationToUser(string userId, string message)
+        public async Task SendNotificationToUser(string userId, object message)
         {
             await _hubContext.Clients.User(userId).SendAsync("ReceiveNotificationToUser", message);
         }

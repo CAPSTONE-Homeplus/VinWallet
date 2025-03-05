@@ -2,8 +2,8 @@
 {
     public interface ISignalRHubService
     {
-        Task SendNotificationToAll(string message);
-        Task SendNotificationToUser(string userId, string message);
-        Task SendNotificationToGroup(string groupName, string message);
+        Task SendNotificationToAll(object message);
+        Task SendNotificationToUser(string userId, object message);
+        Task SendNotificationToGroup(string groupName, object message);
     }
 }
