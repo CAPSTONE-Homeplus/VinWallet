@@ -44,7 +44,7 @@ namespace VinWallet.API.Service
 
         protected string GetUserIdFromJwt()
         {
-            string userId = _httpContextAccessor?.HttpContext?.User.FindFirstValue("UserId");
+            string userId = _httpContextAccessor?.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
             return userId;
         }
     }

@@ -95,11 +95,14 @@ namespace VinWallet.API.Service.Implements
                 };
 
                 await _unitOfWork.GetRepository<UserWallet>().InsertAsync(userWallet);
+                
+
             }
             else
             {
                 throw new BadHttpRequestException(MessageConstant.WalletMessage.UserHasShareWallet);
             }
+            if (await _unitOfWork.CommitAsync() <= 0) throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
 
             _ = Task.Run(async () =>
             {
