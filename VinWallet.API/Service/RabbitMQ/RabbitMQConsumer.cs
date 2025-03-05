@@ -64,7 +64,7 @@ namespace HomeClean.API.Service.Implements.RabbitMQ
                         case "payment_success":
                             break;
                         case "add_wallet_member":
-                            await HandleAddWalletMemberNotification(JsonSerializer.Deserialize<InviteWalletMessage>(message));
+                            await HandleAddWalletMemberNotification(System.Text.Json.JsonSerializer.Deserialize<InviteWalletMessage>(message));
                             break;
 
                         default:
