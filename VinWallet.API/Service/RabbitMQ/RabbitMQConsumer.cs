@@ -7,6 +7,7 @@ using VinWallet.API.Extensions;
 using VinWallet.API.Service.Interfaces;
 using VinWallet.API.Service.RabbitMQ;
 using VinWallet.API.Service.RabbitMQ.Message;
+using VinWallet.Repository.Enums;
 
 namespace HomeClean.API.Service.Implements.RabbitMQ
 {
@@ -85,6 +86,7 @@ namespace HomeClean.API.Service.Implements.RabbitMQ
         {
             var messageObject = new MessageObject<InviteWalletMessage>
             {
+                Type = MessageTypeEnum.InviteWallet.ToString(),
                 Data = inviteWalletMessage
             };
             await _serviceScopeFactory.ExecuteScopedAsync<ISignalRHubService>(async service =>
