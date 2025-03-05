@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
@@ -91,7 +92,7 @@ namespace HomeClean.API.Service.Implements.RabbitMQ
             };
             await _serviceScopeFactory.ExecuteScopedAsync<ISignalRHubService>(async service =>
             {
-                await service.SendNotificationToUser(inviteWalletMessage.MemberId.ToString(), messageObject);
+                await service.SendNotificationToUser(inviteWalletMessage.MemberId.ToString(), JsonConvert.SerializeObject(messageObject));
             });
         }
     }
