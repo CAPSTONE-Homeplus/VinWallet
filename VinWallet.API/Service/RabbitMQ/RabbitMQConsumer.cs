@@ -27,7 +27,7 @@ namespace HomeClean.API.Service.Implements.RabbitMQ
 
             _channel.ExchangeDeclareAsync(config.Exchange, ExchangeType.Topic, durable: true);
             _channel.QueueDeclareAsync(_queueName, durable: true, exclusive: false, autoDelete: false, arguments: null);
-            _channel.QueueBindAsync(_queueName, config.Exchange, "home_plus.#");
+            _channel.QueueBindAsync(_queueName, config.Exchange, "vin_wallet.#");
             _serviceScopeFactory = serviceScopeFactory;
         }
 
@@ -61,7 +61,6 @@ namespace HomeClean.API.Service.Implements.RabbitMQ
                     {
                         case "payment_success":
                             break;
-
                         case "add_wallet_member":
                             await HandleAddWalletMemberNotification(JsonSerializer.Deserialize<InviteWalletMessage>(message));
                             break;

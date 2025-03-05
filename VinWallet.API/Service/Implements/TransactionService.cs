@@ -96,7 +96,7 @@ namespace VinWallet.API.Service.Implements
                 await SaveTransaction(transaction);
 
 
-                await _rabbitMQPublisher.Publish("payment_success", transaction.OrderId);
+                await _rabbitMQPublisher.Publish("payment_success", "homeclean" ,transaction.OrderId);
 
                 await HandleSharedWalletNotification(transaction, userWallet.Wallet);
 

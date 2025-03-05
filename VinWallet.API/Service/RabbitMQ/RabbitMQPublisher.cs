@@ -25,9 +25,8 @@ namespace VinWallet.API.Service.RabbitMQ
             _channel.ExchangeDeclareAsync(_exchange, ExchangeType.Topic, durable: true);
         }
 
-        public async Task Publish(string eventType, object message)
+        public async Task Publish(string eventType,string targetQueue, object message)
         {
-            string routingKey = $"{_queueName}.{eventType}";
             string jsonMessage = JsonSerializer.Serialize(message);
             byte[] body = Encoding.UTF8.GetBytes(jsonMessage);
 
@@ -37,8 +36,19 @@ namespace VinWallet.API.Service.RabbitMQ
                 DeliveryMode = DeliveryModes.Persistent
             };
 
-            await _channel.BasicPublishAsync(_exchange, routingKey, false, props, body);
-            Console.WriteLine($"[RabbitMQ] Sent to routingKey: {routingKey}");
+            List<string> routingKeys = targetQueue switch
+            {
+                "homeclean" => new List<string> { $"home_clean.{eventType}" },
+                "vinwallet" => new List<string> { $"vin_wallet.{eventType}" },
+                "all" => new List<string> { $"home_clean.{eventType}", $"vin_wallet.{eventType}" },
+                _ => throw new ArgumentException("Invalid target queue")
+            };
+
+            foreach (var routingKey in routingKeys)
+            {
+                await _channel.BasicPublishAsync(exchange: _exchange, routingKey: routingKey, false, basicProperties: props, body: body);
+                Console.WriteLine($"[RabbitMQ] Sent to {routingKey}: {message}");
+            }
         }
 
         public void Dispose()

@@ -38,7 +38,6 @@ namespace VinWallet.API.Service.Implements
                 throw new BadHttpRequestException(MessageConstant.LoginMessage.UserNotRegistered); 
             }
 
-            // Kiểm tra username và password có đúng không
             Expression<Func<Domain.Models.User, bool>> searchFilter = p =>
                 p.Username.Equals(loginRequest.Username) &&
                 p.Password.Equals(PasswordUtil.HashPassword(loginRequest.Password));
@@ -50,7 +49,6 @@ namespace VinWallet.API.Service.Implements
                 throw new BadHttpRequestException(MessageConstant.LoginMessage.InvalidUsernameOrPassword); 
             }
 
-            // Nếu tài khoản và mật khẩu hợp lệ, tạo response
             LoginResponse loginResponse = new LoginResponse
             {
                 UserId = user.Id,
@@ -64,7 +62,7 @@ namespace VinWallet.API.Service.Implements
             loginResponse.AccessToken = token.AccessToken;
             loginResponse.RefreshToken = token.RefreshToken;
 
-            await _rabbitMQPublisher.Publish("add_wallet_member", "Tuan Anh test RabbitMQ");
+            await _rabbitMQPublisher.Publish("add_wallet_member", "vinwallet" ,"Tuan Anh test RabbitMQ");
             return loginResponse;
         }
 

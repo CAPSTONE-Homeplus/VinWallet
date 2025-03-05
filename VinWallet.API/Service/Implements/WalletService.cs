@@ -105,7 +105,7 @@ namespace VinWallet.API.Service.Implements
             {
                 try
                 {
-                    await _rabbitMQPublisher.Publish("add_wallet_member", new InviteWalletMessage
+                    await _rabbitMQPublisher.Publish("add_wallet_member","vinwallet" ,new InviteWalletMessage
                     {
                         WalletId = walletId,
                         OwnerId = wallet.OwnerId,
