@@ -154,5 +154,21 @@ namespace VinWallet.API.Service.Implements
 
 
         }
+
+        public async Task<bool> CheckUserInfo(string? phoneNumber, string? email, string? username)
+        {
+            var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(predicate: x => x.PhoneNumber.Equals(phoneNumber) || x.Email.Equals(email) || x.Username.Equals(username));
+
+            if (user != null)
+            {
+                if (user.PhoneNumber.Equals(phoneNumber))
+                    throw new BadHttpRequestException(MessageConstant.UserMessage.PhoneNumberAlreadyExists);
+                if (user.Email.Equals(email))
+                    throw new BadHttpRequestException(MessageConstant.UserMessage.EmailAlreadyExists);
+                if (user.Username.Equals(username))
+                    throw new BadHttpRequestException(MessageConstant.UserMessage.UsernameAlreadyExists);
+            }
+            return true;
+        }
     }
 }
