@@ -33,6 +33,7 @@ namespace VinWallet.Repository.Constants
             public const string TransactionsOfUserEndpointByWalletId = UserEndpoint + "/transactions/{walletId}";
             public const string CreateShareWallet = UserEndpoint + "/share-wallet";
             public const string GetUserByPhoneNumber = UsersEndpoint + "/phone-number/{phoneNumber}";
+            public const string CheckUserInfo = UsersEndpoint + "/check-info";
         }
 
         public static class Wallet

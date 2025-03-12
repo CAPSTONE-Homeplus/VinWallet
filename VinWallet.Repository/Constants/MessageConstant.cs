@@ -29,6 +29,7 @@ namespace VinWallet.Repository.Constants
             public const string PhoneNumberAlreadyExists = "Số điện thoại đã tồn tại";
             public const string EmptyEmail = "Email không được để trống";
             public const string EmailAlreadyExists = "Email đã tồn tại";
+            public const string EmptyUserInfo = "Thông tin người dùng không được để trống";
         }
 
         public static class WalletMessage
