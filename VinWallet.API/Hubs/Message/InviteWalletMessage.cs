@@ -1,6 +1,6 @@
 ﻿using VinWallet.Repository.Enums;
 
-namespace VinWallet.API.Service.RabbitMQ.Message
+namespace VinWallet.API.Hubs.Message
 {
     public class InviteWalletMessage
     {

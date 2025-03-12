@@ -1,8 +1,8 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using VinWallet.API.Hubs.Message;
 using VinWallet.API.Service.Interfaces;
 using VinWallet.API.Service.RabbitMQ;
-using VinWallet.API.Service.RabbitMQ.Message;
 using VinWallet.Domain.Models;
 using VinWallet.Domain.Paginate;
 using VinWallet.Repository.Constants;

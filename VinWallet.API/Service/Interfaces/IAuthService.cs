@@ -7,5 +7,7 @@ namespace VinWallet.API.Service.Interfaces
     {
         Task<LoginResponse> Login(LoginRequest loginRequest);
         Task<LoginResponse> RefreshToken(RefreshTokenRequest refreshTokenRequest);
+
+        Task<LoginResponse> LoginAdmin(LoginRequest loginRequest);
     }
 }

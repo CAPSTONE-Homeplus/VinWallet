@@ -1,4 +1,4 @@
-﻿namespace VinWallet.API.Service.RabbitMQ.Message
+﻿namespace VinWallet.API.Hubs.Message
 {
     public class MessageObject<T> where T : class
     {

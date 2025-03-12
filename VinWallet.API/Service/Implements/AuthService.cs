@@ -1,16 +1,17 @@
 ﻿using AutoMapper;
 using Hangfire;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using VinWallet.API.Service.Interfaces;
 using VinWallet.API.Service.RabbitMQ;
 using VinWallet.Domain.Models;
 using VinWallet.Repository.Constants;
+using VinWallet.Repository.Enums;
 using VinWallet.Repository.Generic.Interfaces;
 using VinWallet.Repository.Payload.Request;
 using VinWallet.Repository.Payload.Response;
 using VinWallet.Repository.Utils;
+using static VinWallet.Repository.Constants.ApiEndPointConstant;
 
 namespace VinWallet.API.Service.Implements
 {
@@ -19,17 +20,19 @@ namespace VinWallet.API.Service.Implements
         private readonly ISignalRHubService _signalRHubService;
         private readonly IBackgroundJobClient _backgroundJobClient;
         private readonly RabbitMQPublisher _rabbitMQPublisher;
+        private readonly IConfiguration _configuration;
 
-        public AuthService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<AuthService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISignalRHubService signalRHubService, IBackgroundJobClient backgroundJobClient, RabbitMQPublisher rabbitMQPublisher) : base(unitOfWork, logger, mapper, httpContextAccessor)
+
+        public AuthService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<AuthService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, ISignalRHubService signalRHubService, IBackgroundJobClient backgroundJobClient, RabbitMQPublisher rabbitMQPublisher, IConfiguration configuration) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
             _signalRHubService = signalRHubService;
             _backgroundJobClient = backgroundJobClient;
             _rabbitMQPublisher = rabbitMQPublisher;
+            _configuration = configuration;
         }
 
         public async Task<LoginResponse> Login(LoginRequest loginRequest)
         {
-            // Kiểm tra nếu username có tồn tại trước
             Expression<Func<Domain.Models.User, bool>> usernameFilter = p => p.Username.Equals(loginRequest.Username);
             Domain.Models.User existingUser = await _unitOfWork.GetRepository<Domain.Models.User>().SingleOrDefaultAsync(predicate: usernameFilter);
 
@@ -62,10 +65,41 @@ namespace VinWallet.API.Service.Implements
             loginResponse.AccessToken = token.AccessToken;
             loginResponse.RefreshToken = token.RefreshToken;
 
-            await _rabbitMQPublisher.Publish("add_wallet_member", "vinwallet" ,"Tuan Anh test RabbitMQ");
             return loginResponse;
         }
 
+        public async Task<LoginResponse> LoginAdmin(LoginRequest loginRequest)
+        {
+            var adminUsername = _configuration["AdminCredentials:Username"];
+            var adminPassword = _configuration["AdminCredentials:Password"];
+
+
+            if (loginRequest.Username != adminUsername || loginRequest.Password != adminPassword) throw new BadHttpRequestException(MessageConstant.LoginMessage.InvalidUsernameOrPassword);
+
+            var adminRole = new Role { Name = UserEnum.Role.Admin.ToString() };
+
+            var adminId = Guid.NewGuid();
+
+            var token = JwtUtil.GenerateJwtToken(new Domain.Models.User
+            {
+                Id = adminId,
+                FullName = "Administrator",
+                Username = adminUsername,
+                Role = adminRole,
+                Status = UserEnum.Status.Active.ToString()
+            }, new Tuple<string, Guid>("UserId", adminId));
+
+            return new LoginResponse
+            {
+                UserId = adminId,
+                FullName = "Administrator",
+                Role = adminRole.Name,
+                Status = UserEnum.Status.Active.ToString(),
+                AccessToken = token.AccessToken,
+                RefreshToken = token.RefreshToken
+            };
+
+        }
 
         public async Task<LoginResponse> RefreshToken(RefreshTokenRequest refreshTokenRequest)
         {
@@ -82,7 +116,6 @@ namespace VinWallet.API.Service.Implements
                 RefreshToken = token.RefreshToken
             };
 
-            _backgroundJobClient.Enqueue(() => _signalRHubService.SendNotificationToUser("161e1a9d-8bca-48c6-b52e-9814594f685b", "Tuan Anh test SinalR to User"));
             return loginResponse;
         }
     }

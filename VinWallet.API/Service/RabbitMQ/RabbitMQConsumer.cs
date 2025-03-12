@@ -3,11 +3,10 @@ using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
-using System.Text.Json;
 using VinWallet.API.Extensions;
+using VinWallet.API.Hubs.Message;
 using VinWallet.API.Service.Interfaces;
 using VinWallet.API.Service.RabbitMQ;
-using VinWallet.API.Service.RabbitMQ.Message;
 using VinWallet.Repository.Enums;
 
 namespace HomeClean.API.Service.Implements.RabbitMQ
