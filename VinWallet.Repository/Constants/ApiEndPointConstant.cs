@@ -45,6 +45,7 @@ namespace VinWallet.Repository.Constants
             public const string DeleteUserWallet = WalletEndpoint + "/{userId}";
             public const string GetTransactionByWalletId = WalletEndpoint + "/transactions";
             public const string ChangeOwner = WalletEndpoint + "/change-owner/{userId}";
+            public const string GetWalletContributionStatistics = WalletEndpoint + "/contribution-statistics";
         }
 
         public static class Transaction

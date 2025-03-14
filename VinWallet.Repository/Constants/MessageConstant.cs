@@ -47,6 +47,7 @@ namespace VinWallet.Repository.Constants
             public const string DeleteUserWalletFailed = "Xóa người dùng khỏi ví thất bại";
             public const string UserHasShareWallet = "Người dùng đã có ở trong ví nào đó";
             public const string NotAllowAction = "Bạn không được truy cập phần thông tin này";
+            public const string GetWalletContributionStatisticsFailed = "Failed to get wallet contribution statistics";
         }
 
         public static class TransactionMessage
