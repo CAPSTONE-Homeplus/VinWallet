@@ -246,5 +246,85 @@ namespace VinWallet.API.Service.Implements
             if (await _unitOfWork.CommitAsync() <= 0) throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
             return _mapper.Map<WalletResponse>(wallet);
         }
+
+
+        public async Task<WalletContributionResponse> GetWalletContributionStatistics(Guid walletId, int days)
+        {
+            if (walletId == Guid.Empty) throw new BadHttpRequestException(MessageConstant.WalletMessage.EmptyWalletId);
+
+            var wallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(
+                predicate: x => x.Id.Equals(walletId) && x.Type.Equals(WalletEnum.WalletType.Shared.ToString()),
+                include: x => x.Include(w => w.UserWallets).ThenInclude(uw => uw.User)
+            );
+
+            if (wallet == null) throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
+
+            // Calculate date range for the specified number of days
+            DateTime endDate = DateTime.UtcNow.AddHours(7); // Using your timezone adjustment pattern
+            DateTime startDate = endDate.AddDays(-days);
+
+
+            // Get all deposits made to the wallet in the specified time period
+            var transactions = await _unitOfWork.GetRepository<Transaction>().GetListAsync(
+                predicate: x => x.WalletId.Equals(walletId) &&
+                                 x.Category.Name.Equals(TransactionCategoryEnum.TransactionCategory.Deposit.ToString()) &&
+                                 x.CreatedAt >= startDate && x.CreatedAt <= endDate
+            );
+
+            // Calculate total contribution
+            decimal totalContribution = transactions.Sum(t => Convert.ToInt64(t.Amount));
+
+            // Group transactions by user and calculate contributions
+            var userContributions = transactions
+                .GroupBy(t => t.UserId)
+                .Select(g => new
+                {
+                    UserId = g.Key,
+                    Contribution = g.Sum(t => Convert.ToInt64(t.Amount))
+                })
+                .ToList();
+
+            // Map to response model
+            var members = new List<MemberContributionDto>();
+
+            foreach (var userContribution in userContributions)
+            {
+                var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(
+                    predicate: x => x.Id.Equals(userContribution.UserId)
+                );
+
+                if (user != null)
+                {
+                    decimal percentage = totalContribution > 0
+                        ? Math.Round((userContribution.Contribution / totalContribution) * 100, 1)
+                        : 0;
+                    members.Add(new MemberContributionDto
+                    {
+                        Name = user.FullName ?? $"{user.FullName}",
+                        Contribution = userContribution.Contribution,
+                        Percentage = percentage,
+                    });
+                }
+            }
+
+            // Sort by contribution amount (descending)
+            members = members.OrderByDescending(m => m.Contribution).ToList();
+
+            // Format time frame text
+            string timeFrame;
+            if (days == 30)
+                timeFrame = "Tháng này"; // This month
+            else if (days == 7)
+                timeFrame = "Tuần này";  // This week
+            else
+                timeFrame = $"{days} ngày gần nhất"; // Last X days
+
+            return new WalletContributionResponse
+            {
+                TotalContribution = totalContribution,
+                TimeFrame = timeFrame,
+                Members = members
+            };
+        }
     }
 }

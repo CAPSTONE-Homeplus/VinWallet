@@ -24,5 +24,6 @@ namespace VinWallet.API.Service.Interfaces
 
         Task<bool> DeleteUserWallet(Guid userId, Guid walletId);
         Task<WalletResponse> UpdateOwnerId(Guid walletId, Guid userId);
+        Task<WalletContributionResponse> GetWalletContributionStatistics(Guid walletId, int days);
     }
 }

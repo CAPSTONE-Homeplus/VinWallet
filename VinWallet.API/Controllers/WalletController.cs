@@ -82,5 +82,25 @@ namespace VinWallet.API.Controllers
             var response = await _walletService.UpdateOwnerId(id, userId);
             return Ok(response);
         }
+
+        [HttpGet(ApiEndPointConstant.Wallet.GetWalletContributionStatistics)]
+        [ProducesResponseType(typeof(WalletContributionResponse), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetWalletContributionStatistics([FromRoute] Guid id, [FromQuery] int days = 30)
+        {
+            try
+            {
+                var response = await _walletService.GetWalletContributionStatistics(id, days);
+                return Ok(response);
+            }
+            catch (BadHttpRequestException ex)
+            {
+                return Problem(ex.Message, statusCode: ex.StatusCode);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting wallet contribution statistics");
+                return Problem(MessageConstant.WalletMessage.GetWalletContributionStatisticsFailed);
+            }
+        }
     }
 }
