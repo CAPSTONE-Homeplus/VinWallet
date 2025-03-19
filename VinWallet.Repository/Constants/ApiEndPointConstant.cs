@@ -20,6 +20,7 @@ namespace VinWallet.Repository.Constants
         {
             public const string AuthenticationEndpoint = ApiEndpoint + "/auth";
             public const string Login = AuthenticationEndpoint + "/login";
+            public const string AdminLogin = AuthenticationEndpoint + "/admin/login";
             public const string RefreshToken = AuthenticationEndpoint + "/refresh-token";
         }
 

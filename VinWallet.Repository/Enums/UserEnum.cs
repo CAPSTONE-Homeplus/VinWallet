@@ -17,7 +17,8 @@ namespace VinWallet.Repository.Enums
         public enum Role
         {
             Leader = 1,
-            Member = 2
+            Member = 2,
+            Admin = 3
         }
     }
 }

@@ -30,5 +30,13 @@ namespace VinWallet.API.Controllers
             var response = await _authService.RefreshToken(refreshTokenRequest);
             return Ok(response);
         }
+
+        [HttpPost(ApiEndPointConstant.Authentication.AdminLogin)]
+        [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+        public async Task<IActionResult> LoginAdmin([FromBody] LoginRequest loginRequest)
+        {
+            var response = await _authService.LoginAdmin(loginRequest);
+            return Ok(response);
+        }
     }
 }

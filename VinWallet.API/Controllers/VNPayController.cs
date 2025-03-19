@@ -253,7 +253,7 @@ namespace VinWallet.API.Controllers
         
         <p>{errorMessage}</p>
         
-        <p class=""return-text"">Mời bạn trở về trang chủ</p>
+       
     </div>
 </body>
 </html>";

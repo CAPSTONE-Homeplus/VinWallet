@@ -3,7 +3,6 @@ using Azure.Core;
 using System.Net;
 using System.Web;
 using VinWallet.API.Service.Interfaces;
-using VinWallet.API.Service.RabbitMQ.Message;
 using VinWallet.API.Service.RabbitMQ;
 using VinWallet.API.VnPay;
 using VinWallet.Domain.Models;
