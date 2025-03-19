@@ -49,6 +49,15 @@ namespace VinWallet.Repository.Utils
             return response;
         }
 
+        public static async Task<HttpResponseMessage> CallApiEndpoint(string url)
+        {
+            using var httpClient = new HttpClient();
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            var response = await httpClient.SendAsync(request);
+            return response;
+        }
+
 
 
         public static async Task<Object> GenerateObjectFromResponse<Object>(HttpResponseMessage response)
