@@ -14,5 +14,6 @@ namespace VinWallet.API.Service.Interfaces
         public Task<IPaginate<UserResponse>> GetAllUserByShareWalletId(Guid shareWalletId, int page, int limit);
 
         public Task<bool> CheckUserInfo(string? phoneNumber, string? email, string? username);
+        public Task<IPaginate<UserResponse>> GetAllUsers(string? search, string? orderBy, int page, int size);
     }
 }

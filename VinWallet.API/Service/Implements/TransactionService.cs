@@ -363,6 +363,104 @@ namespace VinWallet.API.Service.Implements
             return transactions;
         }
 
+        public async Task<GetTransactionResponse> GetTransactionById(Guid transactionId)
+        {
+            if (transactionId == Guid.Empty)
+                throw new BadHttpRequestException(MessageConstant.TransactionMessage.TransactionNotFound);
 
+            var transaction = await _unitOfWork.GetRepository<Transaction>().SingleOrDefaultAsync(
+                predicate: x => x.Id == transactionId,
+                include: x => x.Include(y => y.Category).Include(y => y.PaymentMethod)
+            );
+
+            if (transaction == null)
+                throw new BadHttpRequestException(MessageConstant.TransactionMessage.TransactionNotFound);
+
+            // Check if the user has access to this transaction
+            if (!transaction.UserId.ToString().Equals(GetUserIdFromJwt()))
+                throw new BadHttpRequestException(MessageConstant.UserMessage.NotAllowAction);
+
+            return new GetTransactionResponse(
+                transaction.Id,
+                transaction.WalletId,
+                transaction.UserId,
+                transaction.PaymentMethodId,
+                transaction.Amount,
+                transaction.Type,
+                transaction.PaymentUrl,
+                transaction.Note,
+                transaction.TransactionDate,
+                transaction.Status,
+                transaction.CreatedAt,
+                transaction.UpdatedAt,
+                transaction.Code,
+                transaction.CategoryId,
+                transaction.OrderId
+            );
+        }
+
+        public async Task<IPaginate<GetTransactionResponse>> GetAllTransaction(string? search, string? orderBy, int page, int size)
+        {
+
+
+            Func<IQueryable<Transaction>, IOrderedQueryable<Transaction>> orderByFunc;
+
+            if (!string.IsNullOrEmpty(orderBy))
+            {
+                switch (orderBy.ToLower())
+                {
+                    case "date_asc":
+                        orderByFunc = x => x.OrderBy(y => y.TransactionDate);
+                        break;
+                    case "date_desc":
+                        orderByFunc = x => x.OrderByDescending(y => y.TransactionDate);
+                        break;
+                    case "amount_asc":
+                        orderByFunc = x => x.OrderBy(y => Convert.ToDecimal(y.Amount));
+                        break;
+                    case "amount_desc":
+                        orderByFunc = x => x.OrderByDescending(y => Convert.ToDecimal(y.Amount));
+                        break;
+                    default:
+                        orderByFunc = x => x.OrderByDescending(y => y.CreatedAt);
+                        break;
+                }
+            }
+            else
+            {
+                orderByFunc = x => x.OrderByDescending(y => y.CreatedAt);
+            }
+
+            // Query all transactions with search filter
+            var transactions = await _unitOfWork.GetRepository<Transaction>().GetPagingListAsync(
+                selector: x => new GetTransactionResponse(
+                    x.Id,
+                    x.WalletId,
+                    x.UserId,
+                    x.PaymentMethodId,
+                    x.Amount,
+                    x.Type,
+                    x.PaymentUrl,
+                    x.Note,
+                    x.TransactionDate,
+                    x.Status,
+                    x.CreatedAt,
+                    x.UpdatedAt,
+                    x.Code,
+                    x.CategoryId,
+                    x.OrderId
+                ),
+                predicate: x => string.IsNullOrEmpty(search) ||
+                             x.Code.Contains(search) ||
+                             x.Type.Contains(search) ||
+                             x.Status.Contains(search) ||
+                             x.Note.Contains(search),
+                orderBy: orderByFunc,
+                page: page,
+                size: size
+            );
+
+            return transactions;
+        }
     }
 }

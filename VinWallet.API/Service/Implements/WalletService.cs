@@ -326,5 +326,68 @@ namespace VinWallet.API.Service.Implements
                 Members = members
             };
         }
+
+        public async Task<IPaginate<WalletResponse>> GetAllWallets(string? search, string? orderBy, int page, int size)
+        {
+            Func<IQueryable<Wallet>, IOrderedQueryable<Wallet>> orderByFunc;
+            if (!string.IsNullOrEmpty(orderBy))
+            {
+                switch (orderBy.ToLower())
+                {
+                    case "name_asc":
+                        orderByFunc = x => x.OrderBy(y => y.Name);
+                        break;
+                    case "name_desc":
+                        orderByFunc = x => x.OrderByDescending(y => y.Name);
+                        break;
+                    case "balance_asc":
+                        orderByFunc = x => x.OrderBy(y => y.Balance);
+                        break;
+                    case "balance_desc":
+                        orderByFunc = x => x.OrderByDescending(y => y.Balance);
+                        break;
+                    case "created_asc":
+                        orderByFunc = x => x.OrderBy(y => y.CreatedAt);
+                        break;
+                    case "created_desc":
+                        orderByFunc = x => x.OrderByDescending(y => y.CreatedAt);
+                        break;
+                    case "updated_asc":
+                        orderByFunc = x => x.OrderBy(y => y.UpdatedAt);
+                        break;
+                    case "updated_desc":
+                        orderByFunc = x => x.OrderByDescending(y => y.UpdatedAt);
+                        break;
+                    case "type_asc":
+                        orderByFunc = x => x.OrderBy(y => y.Type);
+                        break;
+                    case "type_desc":
+                        orderByFunc = x => x.OrderByDescending(y => y.Type);
+                        break;
+                    default:
+                        orderByFunc = x => x.OrderByDescending(y => y.UpdatedAt);
+                        break;
+                }
+            }
+            else
+            {
+                orderByFunc = x => x.OrderByDescending(y => y.UpdatedAt);
+            }
+
+            // Query all wallets with search filter
+            var wallets = await _unitOfWork.GetRepository<Wallet>().GetPagingListAsync(
+                selector: x => _mapper.Map<WalletResponse>(x),
+                predicate: x => string.IsNullOrEmpty(search) ||
+                               x.Name.Contains(search) ||
+                               x.Currency.Contains(search) ||
+                               x.Type.Contains(search) ||
+                               x.Status.Contains(search),
+                orderBy: orderByFunc,
+                page: page,
+                size: size
+            );
+
+            return wallets;
+        }
     }
 }

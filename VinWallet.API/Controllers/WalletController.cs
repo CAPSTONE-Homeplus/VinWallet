@@ -102,5 +102,13 @@ namespace VinWallet.API.Controllers
                 return Problem(MessageConstant.WalletMessage.GetWalletContributionStatisticsFailed);
             }
         }
+
+        [HttpGet(ApiEndPointConstant.Wallet.WalletsEndpoint)]
+        [ProducesResponseType(typeof(IPaginate<WalletResponse>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAllWallet([FromQuery] string? search, [FromQuery] string? orderBy, [FromQuery] int page = 1, [FromQuery] int size = 10)
+        {
+            var response = await _walletService.GetAllWallets(search, orderBy, page, size);
+            return Ok(response);
+        }
     }
 }

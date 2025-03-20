@@ -47,5 +47,21 @@ namespace VinWallet.API.Controllers
 
         }
 
+        [HttpGet(ApiEndPointConstant.Transaction.TransactionsEndpoint)]
+        [ProducesResponseType(typeof(IPaginate<GetTransactionResponse>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAllTransactions([FromQuery] string? search, [FromQuery] string? orderBy, [FromQuery] int page = 1, [FromQuery] int size = 10)
+        {
+            var response = await _transactionService.GetAllTransaction(search, orderBy, page, size);
+            return Ok(response);
+        }
+
+        [HttpGet(ApiEndPointConstant.Transaction.TransactionEndpoint)]
+        [ProducesResponseType(typeof(GetTransactionResponse), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetTransactionById(Guid id)
+        {
+            var response = await _transactionService.GetTransactionById(id);
+            return Ok(response);
+        }
+
     }
 }

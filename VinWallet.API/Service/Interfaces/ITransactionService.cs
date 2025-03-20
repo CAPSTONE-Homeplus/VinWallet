@@ -16,5 +16,7 @@ namespace VinWallet.API.Service.Interfaces
         Task<IPaginate<GetTransactionResponse>> GetTransactionByUserId(Guid userId, string? search, string? orderBy, int page, int size);
         Task<IPaginate<GetTransactionResponse>> GetTransactionByUserIdAndWalletId(Guid userId, Guid walletId, string? search, string? orderBy, int page, int size);
         Task<IPaginate<GetTransactionResponse>> GetTransactionByWalletId(Guid walletId, string? search, string? orderBy, int page, int size);
+        Task<GetTransactionResponse> GetTransactionById(Guid transactionId);
+        Task<IPaginate<GetTransactionResponse>> GetAllTransaction(string? search, string? orderBy, int page, int size);
     }
 }
