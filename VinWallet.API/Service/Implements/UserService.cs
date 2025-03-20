@@ -170,5 +170,95 @@ namespace VinWallet.API.Service.Implements
             }
             return true;
         }
+
+        public async Task<IPaginate<UserResponse>> GetAllUsers(string? search, string? orderBy, int page, int size)
+        {
+            Func<IQueryable<User>, IOrderedQueryable<User>> orderByFunc;
+            if (!string.IsNullOrEmpty(orderBy))
+            {
+                switch (orderBy.ToLower())
+                {
+                    case "fullname_asc":
+                        orderByFunc = x => x.OrderBy(y => y.FullName);
+                        break;
+                    case "fullname_desc":
+                        orderByFunc = x => x.OrderByDescending(y => y.FullName);
+                        break;
+                    case "username_asc":
+                        orderByFunc = x => x.OrderBy(y => y.Username);
+                        break;
+                    case "username_desc":
+                        orderByFunc = x => x.OrderByDescending(y => y.Username);
+                        break;
+                    case "email_asc":
+                        orderByFunc = x => x.OrderBy(y => y.Email);
+                        break;
+                    case "email_desc":
+                        orderByFunc = x => x.OrderByDescending(y => y.Email);
+                        break;
+                    case "phone_asc":
+                        orderByFunc = x => x.OrderBy(y => y.PhoneNumber);
+                        break;
+                    case "phone_desc":
+                        orderByFunc = x => x.OrderByDescending(y => y.PhoneNumber);
+                        break;
+                    case "status_asc":
+                        orderByFunc = x => x.OrderBy(y => y.Status);
+                        break;
+                    case "status_desc":
+                        orderByFunc = x => x.OrderByDescending(y => y.Status);
+                        break;
+                    case "created_asc":
+                        orderByFunc = x => x.OrderBy(y => y.CreatedAt);
+                        break;
+                    case "created_desc":
+                        orderByFunc = x => x.OrderByDescending(y => y.CreatedAt);
+                        break;
+                    case "updated_asc":
+                        orderByFunc = x => x.OrderBy(y => y.UpdatedAt);
+                        break;
+                    case "updated_desc":
+                        orderByFunc = x => x.OrderByDescending(y => y.UpdatedAt);
+                        break;
+                    default:
+                        orderByFunc = x => x.OrderByDescending(y => y.UpdatedAt);
+                        break;
+                }
+            }
+            else
+            {
+                orderByFunc = x => x.OrderByDescending(y => y.UpdatedAt);
+            }
+
+            // Query all users with search filter
+            var users = await _unitOfWork.GetRepository<User>().GetPagingListAsync(
+                selector: x => new UserResponse
+                {
+                    Id = x.Id,
+                    FullName = x.FullName,
+                    Status = x.Status,
+                    HouseId = x.HouseId,
+                    ExtraField = x.ExtraField,
+                    CreatedAt = x.CreatedAt,
+                    UpdatedAt = x.UpdatedAt,
+                    Username = x.Username,
+                    Role = x.Role != null ? x.Role.Name : null,
+                    Email = x.Email,
+                    PhoneNumber = x.PhoneNumber
+                },
+                predicate: x => string.IsNullOrEmpty(search) ||
+                               x.FullName.Contains(search) ||
+                               x.Username.Contains(search) ||
+                               x.Email.Contains(search) ||
+                               x.PhoneNumber.Contains(search) ||
+                               x.Status.Contains(search),
+                orderBy: orderByFunc,
+                include: x => x.Include(x => x.Role),
+                page: page,
+                size: size
+            );
+
+            return users;
+        }
     }
 }
