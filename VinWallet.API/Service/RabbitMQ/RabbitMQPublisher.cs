@@ -40,7 +40,8 @@ namespace VinWallet.API.Service.RabbitMQ
             {
                 "homeclean" => new List<string> { $"home_clean.{eventType}" },
                 "vinwallet" => new List<string> { $"vin_wallet.{eventType}" },
-                "all" => new List<string> { $"home_clean.{eventType}", $"vin_wallet.{eventType}" },
+                "vinlaundy" => new List<string> { $"vin_laundy.{eventType}" },
+                "all" => new List<string> { $"home_clean.{eventType}", $"vin_wallet.{eventType}", $"vin_laundy.{eventType}" },
                 _ => throw new ArgumentException("Invalid target queue")
             };
 
