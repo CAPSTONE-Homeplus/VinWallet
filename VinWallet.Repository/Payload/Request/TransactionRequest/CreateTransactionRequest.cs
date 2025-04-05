@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using VinWallet.Repository.Enums;
 
 namespace VinWallet.Repository.Payload.Request.TransactionRequest
 {
@@ -23,5 +24,7 @@ namespace VinWallet.Repository.Payload.Request.TransactionRequest
         public string? Note { get; set; }
 
         public Guid? OrderId { get; set; }
+
+        public ServiceType? ServiceType { get; set; }
     }
 }
