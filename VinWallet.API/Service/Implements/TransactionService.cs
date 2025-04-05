@@ -99,8 +99,16 @@ namespace VinWallet.API.Service.Implements
                 await SaveTransaction(transaction);
 
 
-                await _rabbitMQPublisher.Publish("payment_success", "homeclean" ,transaction.OrderId);
+                if (createTransactionRequest.ServiceType == ServiceType.HomeClean)
+                {
+                    await _rabbitMQPublisher.Publish("payment_success", "homeclean", transaction.OrderId);
+                }
+                else if (createTransactionRequest.ServiceType == ServiceType.Laundry)
+                {
+                    await _rabbitMQPublisher.Publish("payment_success", "vinlaundy", transaction.OrderId);
+                }
 
+                //await _rabbitMQPublisher.Publish("payment_success", "homeclean" ,transaction.OrderId);
                 await HandleSharedWalletNotification(transaction, userWallet.Wallet);
 
                 return transaction;
@@ -143,9 +151,17 @@ namespace VinWallet.API.Service.Implements
 
             return order;
         }
+        private async Task<OrderResponseForPaymentLaundry> GetOrderDetailsLaundry(Guid orderId)
+        {
+            var response = await CallApiUtils.CallApiEndpoint(
+                VinLaundryApiEndPointConstant.Order.OrderEndpointForPayment.Replace("{id}", orderId.ToString())
+            );
+            var order = await CallApiUtils.GenerateObjectFromResponse<OrderResponseForPaymentLaundry>(response);
+            if (order.Id == null || order.Id == Guid.Empty)
+                throw new BadHttpRequestException(MessageConstant.Order.OrderNotFound);
 
-       
-
+            return order;
+        }
         private async Task<UserWallet> ValidateAndGetUserWallet(Guid? userId, Guid walletId)
         {
             var userWallet = await _unitOfWork.GetRepository<UserWallet>()
@@ -187,6 +203,13 @@ namespace VinWallet.API.Service.Implements
 
                         case ServiceType.Laundry:
                             //Viết ở đây
+                            var orderLaundry = await GetOrderDetailsLaundry(request.OrderId.Value);
+                            transaction.Amount = orderLaundry.TotalAmount.ToString();
+                            var categoryLaundry = await _unitOfWork.GetRepository<Category>()
+                                .SingleOrDefaultAsync(predicate: x => x.Name.Equals(TransactionCategoryEnum.TransactionCategory.Spending.ToString()));
+                            transaction.Code = $"LD-{DateTime.UtcNow.AddHours(7):yyyyMMddHHmmssfff}";
+                            transaction.CategoryId = categoryLaundry.Id;
+                            transaction.Type = TransactionEnum.TransactionType.Spending.ToString();
                             break;
 
                         default:
