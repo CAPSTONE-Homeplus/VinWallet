@@ -52,6 +52,19 @@ namespace VinWallet.Repository.Constants
         {
             public const string TransactionsEndpoint = ApiEndpoint + "/transactions";
             public const string TransactionEndpoint = TransactionsEndpoint + "/{id}";
+            public const string TransactionByTimePeriodEndpoint = TransactionsEndpoint + "/by-time-period";
+            public const string TransactionTypeDistributionEndpoint = TransactionsEndpoint + "/type-distribution";
+            public const string TransactionStatusDistributionEndpoint = TransactionsEndpoint + "/status-distribution";
+            public const string CompareWalletTransactionsEndpoint = TransactionsEndpoint + "/compare-wallets";
+            public const string SpendingDepositTrendEndpoint = TransactionsEndpoint + "/spending-deposit-trend";
+            public const string AdminDashboardOverview = TransactionsEndpoint + "/admin-dashboard-overview";
+            public const string AdminTransactionStats = TransactionsEndpoint + "/admin-transaction-stats";
+            public const string DailyTransactionStats = TransactionsEndpoint + "/daily-transaction-stats";
+            public const string TopUsersByTransaction = TransactionsEndpoint + "/top-users";
+            public const string WalletTypeStats = TransactionsEndpoint + "/wallet-type-stats";
+            public const string MonthlyTransactionTrend = TransactionsEndpoint + "/monthly-transaction-trend";
+            public const string PaymentMethodStats = TransactionsEndpoint + "/payment-method-stats";
+            public const string TransactionCategoryStats = TransactionsEndpoint + "/transaction-category-stats";
         }
 
         public static class VNPay
