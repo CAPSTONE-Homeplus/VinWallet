@@ -194,7 +194,8 @@ namespace VinWallet.API.Service.Implements
                         case ServiceType.HomeClean:
                             var order = await GetOrderDetails(request.OrderId.Value);
                             transaction.Amount = order.TotalAmount.ToString();
-                            transaction.Code = order.Code;
+                            var randomHC = Guid.NewGuid().ToString("N").Substring(0, 4).ToUpper(); 
+                            transaction.Code = $"HC-{DateTime.UtcNow.AddHours(7):yyyyMMddHHmmssfff}-{randomHC}";
                             var category = await _unitOfWork.GetRepository<Category>()
                                 .SingleOrDefaultAsync(predicate: x => x.Name.Equals(TransactionCategoryEnum.TransactionCategory.Spending.ToString()));
                             transaction.CategoryId = category.Id;
@@ -207,7 +208,8 @@ namespace VinWallet.API.Service.Implements
                             transaction.Amount = orderLaundry.TotalAmount.ToString();
                             var categoryLaundry = await _unitOfWork.GetRepository<Category>()
                                 .SingleOrDefaultAsync(predicate: x => x.Name.Equals(TransactionCategoryEnum.TransactionCategory.Spending.ToString()));
-                            transaction.Code = $"LD-{DateTime.UtcNow.AddHours(7):yyyyMMddHHmmssfff}";
+                            var randomLD = Guid.NewGuid().ToString("N").Substring(0, 4).ToUpper(); 
+                            transaction.Code = $"LD-{DateTime.UtcNow.AddHours(7):yyyyMMddHHmmssfff}-{randomLD}";
                             transaction.CategoryId = categoryLaundry.Id;
                             transaction.Type = TransactionEnum.TransactionType.Spending.ToString();
                             break;
