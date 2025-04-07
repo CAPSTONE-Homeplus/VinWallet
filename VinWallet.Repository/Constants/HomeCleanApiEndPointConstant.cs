@@ -11,7 +11,7 @@ namespace VinWallet.Repository.Constants
         static HomeCleanApiEndPointConstant()
         {
         }
-        public const string baseUrl = "https://homeclean.onrender.com";
+        public const string baseUrl = "https://homeclean-2z89.onrender.com";
         //public const string baseUrl = "https://localhost:7106";
         public const string RootEndPoint = baseUrl + "/api";
         public const string ApiVersion = "/v1";
