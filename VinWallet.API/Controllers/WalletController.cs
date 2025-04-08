@@ -110,5 +110,17 @@ namespace VinWallet.API.Controllers
             var response = await _walletService.GetAllWallets(search, orderBy, page, size);
             return Ok(response);
         }
+
+        [HttpPut(ApiEndPointConstant.Wallet.WalletDissolution)]
+        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        public async Task<IActionResult> WalletDissolution([FromRoute] Guid id)
+        {
+            var response = await _walletService.WalletDissolution(id);
+            if (!response)
+            {
+                return Problem(MessageConstant.WalletMessage.WalletDissolutionFailed);
+            }
+            return Ok(response);
+        }
     }
 }

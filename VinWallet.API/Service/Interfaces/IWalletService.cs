@@ -27,5 +27,6 @@ namespace VinWallet.API.Service.Interfaces
         Task<WalletContributionResponse> GetWalletContributionStatistics(Guid walletId, int days);
 
         Task<IPaginate<WalletResponse>> GetAllWallets(string? search, string? orderBy, int page, int size);
+        Task<bool> WalletDissolution(Guid walletId);
     }
 }

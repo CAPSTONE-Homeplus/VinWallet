@@ -35,6 +35,13 @@ namespace VinWallet.API.Service.Implements
             await _hubContext.Clients.User(userId).SendAsync("ReceiveNotificationToUser", message);
         }
 
+        public async Task SendNotificationToUsers(List<string> userIds, string message)
+        {
+            foreach (var userId in userIds.Distinct())
+            {
+                await _hubContext.Clients.User(userId).SendAsync("ReceiveNotificationToUser", message);
+            }
+        }
 
     }
 }

@@ -16,7 +16,8 @@ namespace VinWallet.Repository.Enums
         public enum WalletStatus
         {
             Active = 1,
-            Inactive = 2
+            Inactive = 2,
+            Dissolved = 3
         }
 
         public enum UserWalletStatus

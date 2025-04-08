@@ -18,6 +18,8 @@ namespace VinWallet.Repository.Enums
         {
             Deposit = 1,
             Spending = 2,
+            Refund = 3,
+            Withdraw = 4
         }
     }
 }

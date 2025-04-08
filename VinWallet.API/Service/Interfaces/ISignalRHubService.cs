@@ -5,5 +5,6 @@
         Task SendNotificationToAll(string message);
         Task SendNotificationToUser(string userId, string message);
         Task SendNotificationToGroup(string groupName, string message);
+        Task SendNotificationToUsers(List<string> userIds, string message);
     }
 }
