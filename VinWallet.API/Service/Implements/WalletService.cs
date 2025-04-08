@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
+using System;
 using VinWallet.API.Hubs.Message;
 using VinWallet.API.Service.Interfaces;
 using VinWallet.API.Service.RabbitMQ;
@@ -10,16 +12,19 @@ using VinWallet.Repository.Enums;
 using VinWallet.Repository.Generic.Interfaces;
 using VinWallet.Repository.Payload.Request.WalletRequest;
 using VinWallet.Repository.Payload.Response.WalletResponse;
+using static VinWallet.Repository.Enums.TransactionCategoryEnum;
 
 namespace VinWallet.API.Service.Implements
 {
     public class WalletService : BaseService<WalletService>, IWalletService
     {
         private readonly RabbitMQPublisher _rabbitMQPublisher;
+        private readonly ISignalRHubService _signalRHubService;
 
-        public WalletService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<WalletService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, RabbitMQPublisher rabbitMQPublisher) : base(unitOfWork, logger, mapper, httpContextAccessor)
+        public WalletService(IUnitOfWork<VinWalletContext> unitOfWork, ILogger<WalletService> logger, IMapper mapper, IHttpContextAccessor httpContextAccessor, RabbitMQPublisher rabbitMQPublisher, ISignalRHubService signalRHubService) : base(unitOfWork, logger, mapper, httpContextAccessor)
         {
             _rabbitMQPublisher = rabbitMQPublisher;
+            _signalRHubService = signalRHubService;
         }
 
         public async Task<WalletResponse> CreateWallet(CreateWalletRequest createWalletRequest)
@@ -78,7 +83,7 @@ namespace VinWallet.API.Service.Implements
             if (wallet == null) throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
             if (wallet.Type.Equals(WalletEnum.WalletType.Personal.ToString())) throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotShare);
             var userIdFromJwt = GetUserIdFromJwt();
-            if(!wallet.OwnerId.ToString().Equals(userIdFromJwt)) throw new BadHttpRequestException(MessageConstant.WalletMessage.NotAllowAction);
+            if (!wallet.OwnerId.ToString().Equals(userIdFromJwt)) throw new BadHttpRequestException(MessageConstant.WalletMessage.NotAllowAction);
 
             var userWallets = await _unitOfWork.GetRepository<UserWallet>().GetListAsync(predicate: x => x.UserId.Equals(userId));
 
@@ -95,7 +100,7 @@ namespace VinWallet.API.Service.Implements
                 };
 
                 await _unitOfWork.GetRepository<UserWallet>().InsertAsync(userWallet);
-                
+
 
             }
             else
@@ -108,7 +113,7 @@ namespace VinWallet.API.Service.Implements
             {
                 try
                 {
-                    await _rabbitMQPublisher.Publish("add_wallet_member","vinwallet" ,new InviteWalletMessage
+                    await _rabbitMQPublisher.Publish("add_wallet_member", "vinwallet", new InviteWalletMessage
                     {
                         WalletId = walletId,
                         OwnerId = wallet.OwnerId,
@@ -388,6 +393,218 @@ namespace VinWallet.API.Service.Implements
             );
 
             return wallets;
+        }
+
+        public async Task<bool> WalletDissolution(Guid walletId)
+        {
+            try
+            {
+                // Kiểm tra đầu vào
+                if (walletId == Guid.Empty)
+                    throw new BadHttpRequestException(MessageConstant.WalletMessage.EmptyWalletId);
+
+                // Tìm ví cần giải thể
+                var wallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(walletId));
+                if (wallet == null)
+                    throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
+
+                // Kiểm tra loại ví
+                if (wallet.Type.Equals(WalletEnum.WalletType.Personal.ToString()))
+                    throw new BadHttpRequestException(MessageConstant.WalletMessage.CannotDissolvePersonalWallet);
+
+                // Kiểm tra trạng thái ví
+                if (wallet.Status.Equals(WalletEnum.WalletStatus.Dissolved.ToString()))
+                    throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletAlreadyDissolved);
+
+                if (wallet.Status.Equals(WalletEnum.WalletStatus.Inactive.ToString()))
+                    throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletInactive);
+
+                // Kiểm tra quyền người dùng
+                var userIdFromJwt = GetUserIdFromJwt();
+                if (string.IsNullOrEmpty(userIdFromJwt))
+                    throw new UnauthorizedAccessException(MessageConstant.UserMessage.UnauthorizedUser);
+
+                if (wallet.OwnerId.ToString() != userIdFromJwt)
+                    throw new BadHttpRequestException(MessageConstant.WalletMessage.NotAllowAction, StatusCodes.Status403Forbidden);
+
+                // Tìm ví cá nhân của chủ sở hữu
+                var personalWalletOfOwner = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(
+                    predicate: x => x.OwnerId.Equals(wallet.OwnerId) &&
+                                 x.Type.Equals(WalletEnum.WalletType.Personal.ToString()) &&
+                                 x.Status.Equals(WalletEnum.WalletStatus.Active.ToString())
+                );
+
+                if (personalWalletOfOwner == null)
+                    throw new BadHttpRequestException(MessageConstant.WalletMessage.PersonalWalletNotFound);
+
+                decimal? walletBalance = wallet.Balance;
+                bool hasBalance = walletBalance > 0;
+
+                Category withdrawCategory = null;
+                Category depositCategory = null;
+
+                if (hasBalance)
+                {
+                    // Tìm danh mục giao dịch
+                    withdrawCategory = await _unitOfWork.GetRepository<Category>().SingleOrDefaultAsync(
+                        predicate: x => x.Name.Equals(TransactionCategoryEnum.TransactionCategory.Withdraw.ToString()) &&
+                                     x.Status.Equals("Active")
+                    );
+
+                    depositCategory = await _unitOfWork.GetRepository<Category>().SingleOrDefaultAsync(
+                        predicate: x => x.Name.Equals(TransactionCategoryEnum.TransactionCategory.Deposit.ToString()) &&
+                                     x.Status.Equals("Active")
+                    );
+
+                    if (withdrawCategory == null || depositCategory == null)
+                    {
+                        throw new BadHttpRequestException(MessageConstant.TransactionMessage.CategoryNotFound);
+                    }
+                }
+
+                // Bắt đầu xử lý chính
+                if (hasBalance)
+                {
+                    // Cập nhật số dư ví cá nhân
+                    decimal? newBalance = personalWalletOfOwner.Balance + wallet.Balance;
+
+                    // Kiểm tra tràn số
+                    if (newBalance < personalWalletOfOwner.Balance) // Kiểm tra tràn số
+                        throw new InvalidOperationException(MessageConstant.WalletMessage.BalanceOverflow);
+
+                    personalWalletOfOwner.Balance = newBalance;
+                    personalWalletOfOwner.UpdatedAt = DateTime.UtcNow.AddHours(7);
+                    _unitOfWork.GetRepository<Wallet>().UpdateAsync(personalWalletOfOwner);
+
+                    // Tạo các mã giao dịch
+                    var randomWD = Guid.NewGuid().ToString("N").Substring(0, 4).ToUpper();
+                    var randomDP = Guid.NewGuid().ToString("N").Substring(0, 4).ToUpper();
+                    var currentTime = DateTime.UtcNow.AddHours(7);
+
+                    // Tạo giao dịch rút tiền từ ví chung
+                    var withdrawTransaction = new Transaction
+                    {
+                        Id = Guid.NewGuid(),
+                        WalletId = walletId, // Sửa lại từ wallet.OwnerId thành walletId
+                        UserId = wallet.OwnerId, // Sửa lại từ walletId thành wallet.OwnerId  
+                        Amount = walletBalance.ToString(),
+                        Type = TransactionEnum.TransactionType.Withdraw.ToString(),
+                        Note = $"Rút tiền do giải thể ví",
+                        TransactionDate = currentTime,
+                        Status = TransactionEnum.TransactionStatus.Success.ToString(),
+                        CreatedAt = currentTime,
+                        UpdatedAt = currentTime,
+                        Code = $"WD-{currentTime:yyyyMMddHHmmssfff}-{randomWD}",
+                        CategoryId = withdrawCategory.Id,
+                    };
+                    await _unitOfWork.GetRepository<Transaction>().InsertAsync(withdrawTransaction);
+
+                    // Tạo giao dịch nạp tiền vào ví cá nhân
+                    var depositTransaction = new Transaction
+                    {
+                        Id = Guid.NewGuid(),
+                        WalletId = personalWalletOfOwner.Id,
+                        UserId = wallet.OwnerId,
+                        Amount = walletBalance.ToString(),
+                        Type = TransactionEnum.TransactionType.Deposit.ToString(),
+                        Note = $"Nhận tiền từ ví đã giải thể: {wallet.Name}",
+                        TransactionDate = currentTime,
+                        Status = TransactionEnum.TransactionStatus.Success.ToString(),
+                        CreatedAt = currentTime,
+                        UpdatedAt = currentTime,
+                        Code = $"DP-{currentTime:yyyyMMddHHmmssfff}-{randomDP}",
+                        CategoryId = depositCategory.Id
+                    };
+                    await _unitOfWork.GetRepository<Transaction>().InsertAsync(depositTransaction);
+                }
+
+                // Cập nhật trạng thái ví
+                wallet.Balance = 0;
+                wallet.Status = WalletEnum.WalletStatus.Dissolved.ToString();
+                wallet.UpdatedAt = DateTime.UtcNow.AddHours(7);
+                _unitOfWork.GetRepository<Wallet>().UpdateAsync(wallet);
+
+                // Xử lý các kết nối UserWallet
+                var userWallets = await _unitOfWork.GetRepository<UserWallet>().GetListAsync(
+                    predicate: x => x.WalletId.Equals(walletId)
+                );
+
+                if (userWallets == null || !userWallets.Any())
+                {
+                    Console.WriteLine($"Warning: No UserWallet connections found for wallet {walletId}");
+                }
+
+                var userIds = userWallets.Select(x => x.UserId.ToString()).Distinct().ToList();
+
+                foreach (var userWallet in userWallets)
+                {
+                    _unitOfWork.GetRepository<UserWallet>().DeleteAsync(userWallet);
+                }
+
+                // Commit mọi thay đổi
+                int commitResult = await _unitOfWork.CommitAsync();
+                if (commitResult <= 0)
+                    throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
+
+                // Gửi thông báo qua SignalR
+                try
+                {
+                    await _signalRHubService.SendNotificationToUsers(userIds, "Trưởng nhóm đã hủy ví chung");
+                    await _signalRHubService.SendNotificationToUser(wallet.OwnerId.ToString(), "Bạn đã hủy ví chung");
+                }
+                catch (Exception signalREx)
+                {
+                    // Log lỗi nhưng không ảnh hưởng đến kết quả
+                    Console.WriteLine($"❌ SignalR notification failed: {signalREx.Message}");
+                }
+
+                // Gửi thông báo qua RabbitMQ
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _rabbitMQPublisher.Publish("wallet_dissolution", "vinwallet", new
+                        {
+                            WalletId = walletId,
+                            WalletName = wallet.Name,
+                            OwnerId = wallet.OwnerId,
+                            TransferredAmount = walletBalance,
+                            MemberIds = userIds,
+                            DissolvedAt = wallet.UpdatedAt
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"❌ RabbitMQ publish failed: {ex.Message}");
+                    }
+                });
+
+                return true;
+            }
+            catch (BadHttpRequestException ex)
+            {
+                // Chuyển tiếp lỗi BadHttpRequestException
+                Console.WriteLine($"Bad request error dissolving wallet {walletId}: {ex.Message}");
+                throw;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                // Xử lý lỗi xác thực
+                Console.WriteLine($"Authorization error dissolving wallet {walletId}: {ex.Message}");
+                throw;
+            }
+            catch (DbUpdateException ex)
+            {
+                // Xử lý lỗi database
+                Console.WriteLine($"Database error dissolving wallet {walletId}: {ex.Message}");
+                throw new Exception("Lỗi cơ sở dữ liệu khi giải thể ví, vui lòng thử lại sau.", ex);
+            }
+            catch (Exception ex)
+            {
+                // Xử lý các lỗi khác
+                Console.WriteLine($"Error dissolving wallet {walletId}: {ex.Message}");
+                throw new Exception("Lỗi khi giải thể ví, vui lòng thử lại.", ex);
+            }
         }
     }
 }

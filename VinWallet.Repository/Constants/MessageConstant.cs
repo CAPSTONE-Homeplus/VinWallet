@@ -30,6 +30,7 @@ namespace VinWallet.Repository.Constants
             public const string EmptyEmail = "Email không được để trống";
             public const string EmailAlreadyExists = "Email đã tồn tại";
             public const string EmptyUserInfo = "Thông tin người dùng không được để trống";
+            public const string UnauthorizedUser = "Người dùng không có quyền truy cập vào thông tin này";
         }
 
         public static class WalletMessage
@@ -48,6 +49,12 @@ namespace VinWallet.Repository.Constants
             public const string UserHasShareWallet = "Người dùng đã có ở trong ví nào đó";
             public const string NotAllowAction = "Bạn không được truy cập phần thông tin này";
             public const string GetWalletContributionStatisticsFailed = "Failed to get wallet contribution statistics";
+            public const string CannotDissolvePersonalWallet = "Không thể giải tán ví cá nhân";
+            public const string WalletAlreadyDissolved = "Ví đã được giải tán";
+            public const string WalletInactive = "Ví đã bị vô hiệu hóa";
+            public const string PersonalWalletNotFound = "Không tìm thấy ví cá nhân";
+            public const string BalanceOverflow = "Tràn số";
+            public const string WalletDissolutionFailed = "Giải tán ví thất bại";
         }
 
         public static class TransactionMessage
@@ -55,6 +62,7 @@ namespace VinWallet.Repository.Constants
             public const string EmptyTransactionId = "Transaction id bị trống";
             public const string TransactionNotFound = "Không tìm thấy giao dịch";
             public const string CreateTransactionFailed = "Tạo giao dịch thất bại";
+            public const string CategoryNotFound = "Không tìm thấy loại giao dịch";
         }
 
 
