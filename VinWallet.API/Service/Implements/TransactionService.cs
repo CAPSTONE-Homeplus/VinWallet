@@ -84,7 +84,6 @@ namespace VinWallet.API.Service.Implements
             if (!createTransactionRequest.UserId.ToString().Equals(GetUserIdFromJwt()))
                 throw new BadHttpRequestException(MessageConstant.UserMessage.NotAllowAction);
             var userWallet = await ValidateAndGetUserWallet(createTransactionRequest.UserId, createTransactionRequest.WalletId);
-
             var transaction = await InitializeBaseTransaction(createTransactionRequest);
             try
             {
@@ -98,19 +97,9 @@ namespace VinWallet.API.Service.Implements
                 }
                 await SaveTransaction(transaction);
 
+                // RabbitMQ publish moved to ProcessWalletPayment
 
-                if (createTransactionRequest.ServiceType == ServiceType.HomeClean)
-                {
-                    await _rabbitMQPublisher.Publish("payment_success", "homeclean", transaction.OrderId);
-                }
-                else if (createTransactionRequest.ServiceType == ServiceType.Laundry)
-                {
-                    await _rabbitMQPublisher.Publish("payment_success", "vinlaundy", transaction.OrderId);
-                }
-
-                //await _rabbitMQPublisher.Publish("payment_success", "homeclean" ,transaction.OrderId);
                 await HandleSharedWalletNotification(transaction, userWallet.Wallet);
-
                 return transaction;
             }
             catch (Exception ex)
@@ -245,19 +234,35 @@ namespace VinWallet.API.Service.Implements
 
         private async Task<TransactionResponse> ProcessWalletPayment(CreateTransactionRequest request, Transaction transaction)
         {
+            // First update wallet balance
             var success = await _walletService.UpdateWalletBalance(
                 request.WalletId,
                 transaction.Amount,
                 TransactionCategoryEnum.TransactionCategory.Spending
             );
 
-            var status = success ?
-                TransactionEnum.TransactionStatus.Success :
-                TransactionEnum.TransactionStatus.Failed;
+            if (!success)
+            {
+                // If wallet update failed, mark transaction as failed
+                await UpdateTransactionStatus(transaction, TransactionEnum.TransactionStatus.Failed);
+                transaction.Status = TransactionEnum.TransactionStatus.Failed.ToString();
+                return _mapper.Map<TransactionResponse>(transaction);
+            }
 
-            await UpdateTransactionStatus(transaction, status);
+            // If wallet update succeeded, mark transaction as successful
+            await UpdateTransactionStatus(transaction, TransactionEnum.TransactionStatus.Success);
+            transaction.Status = TransactionEnum.TransactionStatus.Success.ToString();
 
-            transaction.Status = status.ToString();
+            // Now that transaction is successful, publish the message
+            if (request.ServiceType == ServiceType.HomeClean)
+            {
+                await _rabbitMQPublisher.Publish("payment_success", "homeclean", transaction.OrderId);
+            }
+            else if (request.ServiceType == ServiceType.Laundry)
+            {
+                await _rabbitMQPublisher.Publish("payment_success", "vinlaundy", transaction.OrderId);
+            }
+
             return _mapper.Map<TransactionResponse>(transaction);
         }
         private async Task<TransactionResponse> ProcessVNPayPayment(CreateTransactionRequest request, Transaction transaction)

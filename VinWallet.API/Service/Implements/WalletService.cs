@@ -190,6 +190,11 @@ namespace VinWallet.API.Service.Implements
             if (walletId == Guid.Empty) throw new BadHttpRequestException(MessageConstant.WalletMessage.EmptyWalletId);
             var wallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(predicate: x => x.Id.Equals(walletId));
             if (wallet == null) throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
+            if (string.IsNullOrWhiteSpace(amount))
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.EmptyAmount);
+
+            if (!decimal.TryParse(amount, out var parsedAmount))
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.InvalidAmount);
             if (transactionCategory == TransactionCategoryEnum.TransactionCategory.Deposit)
             {
                 wallet.Balance += decimal.Parse(amount);

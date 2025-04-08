@@ -55,6 +55,7 @@ namespace VinWallet.Repository.Constants
             public const string PersonalWalletNotFound = "Không tìm thấy ví cá nhân";
             public const string BalanceOverflow = "Tràn số";
             public const string WalletDissolutionFailed = "Giải tán ví thất bại";
+            public const string InvalidAmount = "Số tiền không hợp lệ";
         }
 
         public static class TransactionMessage
