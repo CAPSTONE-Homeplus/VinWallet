@@ -93,7 +93,7 @@ namespace VinWallet.API.Service.Implements
                 throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
 
             // Tạo ví cá nhân cho User
-            _backgroundJobClient.Enqueue(() => _walletService.CreatePersionalWallet(newUser.Id));
+            await _walletService.CreatePersionalWallet(newUser.Id);
 
             // Trả về Response
             var response = _mapper.Map<UserResponse>(newUser);
