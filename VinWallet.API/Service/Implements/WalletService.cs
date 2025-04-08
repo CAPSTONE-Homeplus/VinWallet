@@ -29,7 +29,7 @@ namespace VinWallet.API.Service.Implements
             newWallet.CreatedAt = DateTime.UtcNow.AddHours(7);
             newWallet.UpdatedAt = DateTime.UtcNow.AddHours(7);
             newWallet.Balance = 0;
-            newWallet.Currency = "VND";
+            newWallet.Currency = "POINT";
             newWallet.Status = WalletEnum.WalletStatus.Active.ToString();
             await _unitOfWork.GetRepository<Wallet>().InsertAsync(newWallet);
             if (await _unitOfWork.CommitAsync() <= 0) throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
