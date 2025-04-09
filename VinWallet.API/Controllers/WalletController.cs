@@ -122,5 +122,28 @@ namespace VinWallet.API.Controllers
             }
             return Ok(response);
         }
+        [HttpPut(ApiEndPointConstant.Wallet.TransferFromSharedToPersonal)]
+        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        public async Task<IActionResult> TransferFromSharedToPersonal(TransferRequest transferRequest)
+        {
+            var response = await _walletService.TransferFromSharedToPersonal(transferRequest.SharedWalletId, transferRequest.PersonalWalletId, transferRequest.Amount);
+            if (!response)
+            {
+                return Problem(MessageConstant.WalletMessage.TransferFailed);
+            }
+            return Ok(response);
+        }
+        [HttpPut(ApiEndPointConstant.Wallet.TransferFromPersonalToShared)]
+        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        public async Task<IActionResult> TransferFromPersonalToShared(TransferRequest transferRequest)
+        {
+            var response = await _walletService.TransferFromPersonalToShared(transferRequest.SharedWalletId, transferRequest.PersonalWalletId, transferRequest.Amount);
+            if (!response)
+            {
+                return Problem(MessageConstant.WalletMessage.TransferFailed);
+            }
+            return Ok(response);
+        }
+
     }
 }
