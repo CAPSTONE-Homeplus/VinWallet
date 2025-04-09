@@ -28,5 +28,7 @@ namespace VinWallet.API.Service.Interfaces
 
         Task<IPaginate<WalletResponse>> GetAllWallets(string? search, string? orderBy, int page, int size);
         Task<bool> WalletDissolution(Guid walletId);
+        Task<bool> TransferFromSharedToPersonal(Guid sharedWalletId, Guid personalWalletId, decimal amount);
+        Task<bool> TransferFromPersonalToShared(Guid personalWalletId, Guid sharedWalletId, decimal amount);
     }
 }

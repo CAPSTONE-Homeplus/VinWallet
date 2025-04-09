@@ -560,7 +560,7 @@ namespace VinWallet.API.Service.Implements
                 catch (Exception signalREx)
                 {
                     // Log lỗi nhưng không ảnh hưởng đến kết quả
-                    Console.WriteLine($"❌ SignalR notification failed: {signalREx.Message}");
+                    Console.WriteLine($" SignalR notification failed: {signalREx.Message}");
                 }
 
                 // Gửi thông báo qua RabbitMQ
@@ -580,7 +580,7 @@ namespace VinWallet.API.Service.Implements
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"❌ RabbitMQ publish failed: {ex.Message}");
+                        Console.WriteLine($" RabbitMQ publish failed: {ex.Message}");
                     }
                 });
 
@@ -609,6 +609,350 @@ namespace VinWallet.API.Service.Implements
                 // Xử lý các lỗi khác
                 Console.WriteLine($"Error dissolving wallet {walletId}: {ex.Message}");
                 throw new Exception("Lỗi khi giải thể ví, vui lòng thử lại.", ex);
+            }
+        }
+
+        public async Task<bool> TransferFromSharedToPersonal(Guid sharedWalletId, Guid personalWalletId, decimal amount)
+        {
+            if (sharedWalletId == Guid.Empty || personalWalletId == Guid.Empty)
+            {
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.EmptyWalletId);
+            }
+            if (amount <= 0)
+            {
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.InvalidAmount);
+            }
+
+            var sharedWallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(
+                predicate: x => x.Id.Equals(sharedWalletId) && x.Type.Equals(WalletEnum.WalletType.Shared.ToString()),
+                include: x => x.Include(w => w.UserWallets)
+            );
+            if (sharedWallet == null)
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
+            if (!sharedWallet.Status.Equals(WalletEnum.WalletStatus.Active.ToString()))
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletInactive);
+
+            var personalWallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(
+                predicate: x => x.Id.Equals(personalWalletId) && x.Type.Equals(WalletEnum.WalletType.Personal.ToString())
+            );
+            if (personalWallet == null)
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
+            if (!personalWallet.Status.Equals(WalletEnum.WalletStatus.Active.ToString()))
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletInactive);
+            var userIdFromJwt = GetUserIdFromJwt();
+            var userId = Guid.Parse(userIdFromJwt);
+
+            bool isSharedWalletMember = sharedWallet.UserWallets.Any(uw => uw.UserId.Equals(userId));
+            if (!isSharedWalletMember)
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.UserNotInWallet, StatusCodes.Status403Forbidden);
+
+            if (!personalWallet.OwnerId.ToString().Equals(userIdFromJwt))
+                throw new BadHttpRequestException(MessageConstant.UserMessage.NotAllowAction, StatusCodes.Status403Forbidden);
+
+            if (sharedWallet.Balance < amount)
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.NotEnoughBalance);
+
+            var withdrawCategory = await _unitOfWork.GetRepository<Category>().SingleOrDefaultAsync(
+                predicate: x => x.Name.Equals(TransactionCategoryEnum.TransactionCategory.Withdraw.ToString()) &&
+                             x.Status.Equals("Active")
+            );
+            var depositCategory = await _unitOfWork.GetRepository<Category>().SingleOrDefaultAsync(
+                predicate: x => x.Name.Equals(TransactionCategoryEnum.TransactionCategory.Deposit.ToString()) &&
+                             x.Status.Equals("Active")
+            );
+
+            if (withdrawCategory == null || depositCategory == null)
+                throw new BadHttpRequestException(MessageConstant.TransactionMessage.CategoryNotFound);
+
+            try
+            {
+                // Generate transaction codes
+                var randomWD = Guid.NewGuid().ToString("N").Substring(0, 4).ToUpper();
+                var randomDP = Guid.NewGuid().ToString("N").Substring(0, 4).ToUpper();
+                var currentTime = DateTime.UtcNow.AddHours(7);
+
+                // Update shared wallet balance
+                sharedWallet.Balance -= amount;
+                sharedWallet.UpdatedAt = currentTime;
+                _unitOfWork.GetRepository<Wallet>().UpdateAsync(sharedWallet);
+
+                // Create withdraw transaction for shared wallet
+                var withdrawTransaction = new Transaction
+                {
+                    Id = Guid.NewGuid(),
+                    WalletId = sharedWalletId,
+                    UserId = userId,
+                    Amount = amount.ToString(),
+                    Type = TransactionEnum.TransactionType.Withdraw.ToString(),
+                    Note = $"Rút tiền từ ví chung {sharedWallet.Name} sang ví cá nhân",
+                    TransactionDate = currentTime,
+                    Status = TransactionEnum.TransactionStatus.Success.ToString(),
+                    CreatedAt = currentTime,
+                    UpdatedAt = currentTime,
+                    Code = $"WD-{currentTime:yyyyMMddHHmmssfff}-{randomWD}",
+                    CategoryId = withdrawCategory.Id
+                };
+                await _unitOfWork.GetRepository<Transaction>().InsertAsync(withdrawTransaction);
+
+                // Update personal wallet balance
+                personalWallet.Balance += amount;
+                personalWallet.UpdatedAt = currentTime;
+                _unitOfWork.GetRepository<Wallet>().UpdateAsync(personalWallet);
+
+                // Create deposit transaction for personal wallet
+                var depositTransaction = new Transaction
+                {
+                    Id = Guid.NewGuid(),
+                    WalletId = personalWalletId,
+                    UserId = userId,
+                    Amount = amount.ToString(),
+                    Type = TransactionEnum.TransactionType.Deposit.ToString(),
+                    Note = $"Nhận tiền từ ví chung {sharedWallet.Name}",
+                    TransactionDate = currentTime,
+                    Status = TransactionEnum.TransactionStatus.Success.ToString(),
+                    CreatedAt = currentTime,
+                    UpdatedAt = currentTime,
+                    Code = $"DP-{currentTime:yyyyMMddHHmmssfff}-{randomDP}",
+                    CategoryId = depositCategory.Id
+                };
+                await _unitOfWork.GetRepository<Transaction>().InsertAsync(depositTransaction);
+
+                // Commit all changes
+                if (await _unitOfWork.CommitAsync() <= 0)
+                    throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
+
+                // Notify members of shared wallet about the transfer
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var memberIds = sharedWallet.UserWallets
+                            .Where(uw => !uw.UserId.Equals(userId))
+                            .Select(uw => uw.UserId.ToString())
+                            .ToList();
+
+                        if (memberIds.Any())
+                        {
+                            var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(
+                                predicate: x => x.Id.Equals(userId)
+                            );
+
+                            string userName = user?.FullName ?? user?.Username ?? "Một thành viên";
+                            string message = $"{userName} đã chuyển {amount} từ ví chung {sharedWallet.Name} sang ví cá nhân";
+
+                            await _signalRHubService.SendNotificationToUsers(memberIds, message);
+                        }
+
+                        // Publish message to RabbitMQ
+                        await _rabbitMQPublisher.Publish("wallet_transfer", "vinwallet", new
+                        {
+                            SourceWalletId = sharedWalletId,
+                            DestinationWalletId = personalWalletId,
+                            UserId = userId,
+                            Amount = amount,
+                            TransferredAt = currentTime
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"❌ Notification error: {ex.Message}");
+                        // Don't throw exception as this is a background task
+                    }
+                });
+
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                Console.WriteLine($"Database error transferring from wallet {sharedWalletId} to {personalWalletId}: {ex.Message}");
+                throw new Exception("Lỗi cơ sở dữ liệu khi chuyển tiền, vui lòng thử lại sau.", ex);
+            }
+            catch (BadHttpRequestException)
+            {
+                // Re-throw BadHttpRequestException as it already contains proper error message
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error transferring from wallet {sharedWalletId} to {personalWalletId}: {ex.Message}");
+                throw new Exception("Lỗi khi chuyển tiền, vui lòng thử lại.", ex);
+            }
+        }
+
+        public async Task<bool> TransferFromPersonalToShared(Guid personalWalletId, Guid sharedWalletId, decimal amount)
+        {
+            if (personalWalletId == Guid.Empty || sharedWalletId == Guid.Empty)
+            {
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.EmptyWalletId);
+            }
+            if (amount <= 0)
+            {
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.InvalidAmount);
+            }
+
+            var personalWallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(
+                predicate: x => x.Id.Equals(personalWalletId) && x.Type.Equals(WalletEnum.WalletType.Personal.ToString())
+            );
+            if (personalWallet == null)
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
+            if (!personalWallet.Status.Equals(WalletEnum.WalletStatus.Active.ToString()))
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletInactive);
+
+            var sharedWallet = await _unitOfWork.GetRepository<Wallet>().SingleOrDefaultAsync(
+                predicate: x => x.Id.Equals(sharedWalletId) && x.Type.Equals(WalletEnum.WalletType.Shared.ToString()),
+                include: x => x.Include(w => w.UserWallets)
+            );
+            if (sharedWallet == null)
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletNotFound);
+            if (!sharedWallet.Status.Equals(WalletEnum.WalletStatus.Active.ToString()))
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.WalletInactive);
+
+            var userIdFromJwt = GetUserIdFromJwt();
+            var userId = Guid.Parse(userIdFromJwt);
+
+            // Verify the user owns the personal wallet
+            if (!personalWallet.OwnerId.ToString().Equals(userIdFromJwt))
+                throw new BadHttpRequestException(MessageConstant.UserMessage.NotAllowAction, StatusCodes.Status403Forbidden);
+
+            // Verify the user is a member of the shared wallet
+            bool isSharedWalletMember = sharedWallet.UserWallets.Any(uw => uw.UserId.Equals(userId));
+            if (!isSharedWalletMember)
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.UserNotInWallet, StatusCodes.Status403Forbidden);
+
+            // Check if personal wallet has enough balance
+            if (personalWallet.Balance < amount)
+                throw new BadHttpRequestException(MessageConstant.WalletMessage.NotEnoughBalance);
+
+            // Get transaction categories
+            var withdrawCategory = await _unitOfWork.GetRepository<Category>().SingleOrDefaultAsync(
+                predicate: x => x.Name.Equals(TransactionCategoryEnum.TransactionCategory.Withdraw.ToString()) &&
+                             x.Status.Equals("Active")
+            );
+            var depositCategory = await _unitOfWork.GetRepository<Category>().SingleOrDefaultAsync(
+                predicate: x => x.Name.Equals(TransactionCategoryEnum.TransactionCategory.Deposit.ToString()) &&
+                             x.Status.Equals("Active")
+            );
+
+            if (withdrawCategory == null || depositCategory == null)
+                throw new BadHttpRequestException(MessageConstant.TransactionMessage.CategoryNotFound);
+
+            try
+            {
+                // Generate transaction codes
+                var randomWD = Guid.NewGuid().ToString("N").Substring(0, 4).ToUpper();
+                var randomDP = Guid.NewGuid().ToString("N").Substring(0, 4).ToUpper();
+                var currentTime = DateTime.UtcNow.AddHours(7);
+
+                // Update personal wallet balance
+                personalWallet.Balance -= amount;
+                personalWallet.UpdatedAt = currentTime;
+                _unitOfWork.GetRepository<Wallet>().UpdateAsync(personalWallet);
+
+                // Create withdraw transaction for personal wallet
+                var withdrawTransaction = new Transaction
+                {
+                    Id = Guid.NewGuid(),
+                    WalletId = personalWalletId,
+                    UserId = userId,
+                    Amount = amount.ToString(),
+                    Type = TransactionEnum.TransactionType.Withdraw.ToString(),
+                    Note = $"Chuyển tiền từ ví cá nhân sang ví chung {sharedWallet.Name}",
+                    TransactionDate = currentTime,
+                    Status = TransactionEnum.TransactionStatus.Success.ToString(),
+                    CreatedAt = currentTime,
+                    UpdatedAt = currentTime,
+                    Code = $"WD-{currentTime:yyyyMMddHHmmssfff}-{randomWD}",
+                    CategoryId = withdrawCategory.Id
+                };
+                await _unitOfWork.GetRepository<Transaction>().InsertAsync(withdrawTransaction);
+
+                // Update shared wallet balance
+                sharedWallet.Balance += amount;
+                sharedWallet.UpdatedAt = currentTime;
+                _unitOfWork.GetRepository<Wallet>().UpdateAsync(sharedWallet);
+
+                // Create deposit transaction for shared wallet
+                var depositTransaction = new Transaction
+                {
+                    Id = Guid.NewGuid(),
+                    WalletId = sharedWalletId,
+                    UserId = userId,
+                    Amount = amount.ToString(),
+                    Type = TransactionEnum.TransactionType.Deposit.ToString(),
+                    Note = $"Nhận tiền từ ví cá nhân của {personalWallet.OwnerId}",
+                    TransactionDate = currentTime,
+                    Status = TransactionEnum.TransactionStatus.Success.ToString(),
+                    CreatedAt = currentTime,
+                    UpdatedAt = currentTime,
+                    Code = $"DP-{currentTime:yyyyMMddHHmmssfff}-{randomDP}",
+                    CategoryId = depositCategory.Id
+                };
+                await _unitOfWork.GetRepository<Transaction>().InsertAsync(depositTransaction);
+
+                // Commit all changes
+                if (await _unitOfWork.CommitAsync() <= 0)
+                    throw new DbUpdateException(MessageConstant.DataBase.DatabaseError);
+
+                // Notify members of shared wallet about the contribution
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        // Get user information for better notification
+                        var user = await _unitOfWork.GetRepository<User>().SingleOrDefaultAsync(
+                            predicate: x => x.Id.Equals(userId)
+                        );
+
+                        string userName = user?.FullName ?? user?.Username ?? "Một thành viên";
+
+                        // Get all other members of the shared wallet
+                        var memberIds = sharedWallet.UserWallets
+                            .Where(uw => !uw.UserId.Equals(userId))
+                            .Select(uw => uw.UserId.ToString())
+                            .ToList();
+
+                        if (memberIds.Any())
+                        {
+                            string message = $"{userName} đã đóng góp {amount} vào ví chung {sharedWallet.Name}";
+                            await _signalRHubService.SendNotificationToUsers(memberIds, message);
+                        }
+
+                        // Publish message to RabbitMQ
+                        await _rabbitMQPublisher.Publish("wallet_contribution", "vinwallet", new
+                        {
+                            SourceWalletId = personalWalletId,
+                            DestinationWalletId = sharedWalletId,
+                            UserId = userId,
+                            Amount = amount,
+                            ContributedAt = currentTime
+                        });
+
+                        // Update contribution statistics if needed
+                        // This could potentially trigger an update to the wallet contribution statistics
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"❌ Notification error: {ex.Message}");
+                        // Don't throw exception as this is a background task
+                    }
+                });
+
+                return true;
+            }
+            catch (DbUpdateException ex)
+            {
+                Console.WriteLine($"Database error transferring from wallet {personalWalletId} to {sharedWalletId}: {ex.Message}");
+                throw new Exception("Lỗi cơ sở dữ liệu khi chuyển tiền, vui lòng thử lại sau.", ex);
+            }
+            catch (BadHttpRequestException)
+            {
+                // Re-throw BadHttpRequestException as it already contains proper error message
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error transferring from wallet {personalWalletId} to {sharedWalletId}: {ex.Message}");
+                throw new Exception("Lỗi khi chuyển tiền, vui lòng thử lại.", ex);
             }
         }
     }

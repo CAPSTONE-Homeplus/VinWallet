@@ -56,6 +56,7 @@ namespace VinWallet.Repository.Constants
             public const string BalanceOverflow = "Tràn số";
             public const string WalletDissolutionFailed = "Giải tán ví thất bại";
             public const string InvalidAmount = "Số tiền không hợp lệ";
+            public const string TransferFailed = "Chuyển tiền thất bại";
         }
 
         public static class TransactionMessage
