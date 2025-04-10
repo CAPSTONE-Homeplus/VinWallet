@@ -11,7 +11,7 @@ namespace VinWallet.Repository.Constants
         static VinLaundryApiEndPointConstant()
         {
         }
-        public const string baseUrl = "https://vinlaundry.onrender.com";
+        public const string baseUrl = "https://vinlaundry.vinhomesresident.com";
         public const string RootEndPoint = baseUrl + "/api";
         public const string ApiVersion = "/v1";
         public const string ApiEndpoint = RootEndPoint + ApiVersion;
