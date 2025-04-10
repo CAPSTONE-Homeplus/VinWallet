@@ -137,7 +137,7 @@ namespace VinWallet.API.Controllers
         [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
         public async Task<IActionResult> TransferFromPersonalToShared(TransferRequest transferRequest)
         {
-            var response = await _walletService.TransferFromPersonalToShared(transferRequest.SharedWalletId, transferRequest.PersonalWalletId, transferRequest.Amount);
+            var response = await _walletService.TransferFromPersonalToShared(transferRequest.PersonalWalletId, transferRequest.SharedWalletId, transferRequest.Amount);
             if (!response)
             {
                 return Problem(MessageConstant.WalletMessage.TransferFailed);
